@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>2.6.3</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+	<groupId>org.rapid-graphql</groupId>
+	<artifactId>rapid-graphql</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>rapid-graphql</name>
+	<description>Demo graphql booster app</description>
+	<modules>
+		<module>starter</module>
+		<module>demoapp</module>
+	</modules>
+	<packaging>pom</packaging>
+
+	<properties>
+		<java.version>11</java.version>
+		<graphql-spring-boot-starter.version>12.0.0</graphql-spring-boot-starter.version>
+		<graphql-java.version>17.3</graphql-java.version>
+		<checker-qual.version>3.21.2</checker-qual.version>
+		<graphql-scalars.version>17.0</graphql-scalars.version>
+		<spring-boot.version>2.6.3</spring-boot.version>
+	</properties>
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework</groupId>
+				<artifactId>spring-context</artifactId>
+				<version>${spring-framework.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework</groupId>
+				<artifactId>spring-core</artifactId>
+				<version>${spring-framework.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-autoconfigure-processor</artifactId>
+				<optional>true</optional>
+				<version>${spring-boot.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.graphql-java</groupId>
+				<artifactId>graphql-java</artifactId>
+				<version>${graphql-java.version}</version>
+				<scope>compile</scope>
+			</dependency>
+			<dependency>
+				<groupId>com.graphql-java-kickstart</groupId>
+				<artifactId>graphql-spring-boot-starter</artifactId>
+				<version>${graphql-spring-boot-starter.version}</version>
+				<exclusions>
+					<exclusion>
+						<artifactId>graphql-java</artifactId>
+						<groupId>com.graphql-java</groupId>
+					</exclusion>
+				</exclusions>
+			</dependency>
+			<dependency>
+				<groupId>com.graphql-java</groupId>
+				<artifactId>graphql-java-extended-scalars</artifactId>
+				<version>${graphql-scalars.version}</version>
+			</dependency>
+			<!-- Annotations from the Checker Framework: nullness, interning, locking, ... -->
+			<dependency>
+				<groupId>org.checkerframework</groupId>
+				<artifactId>checker-qual</artifactId>
+				<version>${checker-qual.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.google.errorprone</groupId>
+				<artifactId>javac</artifactId>
+				<version>9+181-r4173-1</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+</project>
