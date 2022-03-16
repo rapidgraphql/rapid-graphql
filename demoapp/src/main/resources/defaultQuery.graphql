@@ -1,4 +1,0 @@
-query {
-    echo(String: "echo"): Int
-    count: Int
-}
