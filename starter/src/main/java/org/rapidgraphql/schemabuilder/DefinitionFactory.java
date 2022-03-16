@@ -81,8 +81,10 @@ public class DefinitionFactory {
     private Set<String> definedClasses = new HashSet<>();
     private Map<TypeKind, Function<DiscoveredClass, Definition<?>>> definitionFactory = new HashMap<>();
     private static final Set<Class<?>> WRAPPER_CLASSES = Set.of(Optional.class, Future.class, CompletableFuture.class);
+    private final DefaultValueAnnotationProcessor defaultValueAnnotationProcessor;
 
-    public DefinitionFactory() {
+    public DefinitionFactory(DefaultValueAnnotationProcessor defaultValueAnnotationProcessor) {
+        this.defaultValueAnnotationProcessor = defaultValueAnnotationProcessor;
         definitionFactory.put(TypeKind.OUTPUT_TYPE, this::createTypeDefinition);
         definitionFactory.put(TypeKind.INPUT_TYPE, this::createInputTypeDefinition);
         definitionFactory.put(TypeKind.ENUM_TYPE, this::createEnumTypeDefinition);
@@ -259,7 +261,7 @@ public class DefinitionFactory {
         InputValueDefinition.Builder builder = InputValueDefinition.newInputValueDefinition()
                 .name(parameter.getName())
                 .type(convertToInputGraphQLType(parameter.getAnnotatedType()));
-        DefaultValueAnnotationProcessor.applyAnnotations(parameter, builder);
+        defaultValueAnnotationProcessor.applyAnnotations(parameter, builder);
         return builder.build();
     }
 

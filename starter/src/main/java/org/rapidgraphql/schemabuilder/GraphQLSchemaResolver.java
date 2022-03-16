@@ -28,7 +28,7 @@ public class GraphQLSchemaResolver {
     private final DefinitionFactory definitionFactory;
 
     public GraphQLSchemaResolver() {
-        definitionFactory = new DefinitionFactory();
+        definitionFactory = new DefinitionFactory(new DefaultValueAnnotationProcessorImpl());
     }
 
     class MyTypeDefinitionFactory implements TypeDefinitionFactory {
@@ -58,8 +58,6 @@ public class GraphQLSchemaResolver {
                 .options(options)
                 .scalars(definitionFactory.getScalars())
                 .build();
-
-
     }
 
 }
