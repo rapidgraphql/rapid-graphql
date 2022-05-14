@@ -6,7 +6,7 @@ import graphql.language.InputValueDefinition;
 import graphql.language.IntValue;
 import graphql.language.NullValue;
 import graphql.language.StringValue;
-import org.jetbrains.annotations.NotNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.Test;
 import org.rapidgraphql.annotations.GraphQLDefault;
 import org.rapidgraphql.annotations.GraphQLDefaultNull;
@@ -16,8 +16,7 @@ import java.math.BigInteger;
 import java.time.DayOfWeek;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DefaultValueAnnotationProcessorImplTest {
     private DefaultValueAnnotationProcessor defaultValueAnnotationProcessor = new DefaultValueAnnotationProcessorImpl();
@@ -66,7 +65,7 @@ class DefaultValueAnnotationProcessorImplTest {
         assertTrue(new ArrayValue(List.of(new ArrayValue(List.of(new StringValue("abc"))))).isEqualTo(inputValueDefinition.getDefaultValue()));
     }
 
-    @NotNull
+    @NonNull
     private InputValueDefinition calculateInputValue(String methodName, Class<?> methodType) throws NoSuchMethodException {
         Method method = DefaultValueAnnotationProcessorImplTest.class.getDeclaredMethod(methodName, methodType);
         InputValueDefinition.Builder builder = InputValueDefinition.newInputValueDefinition();

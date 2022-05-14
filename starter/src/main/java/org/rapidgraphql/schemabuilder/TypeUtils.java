@@ -2,15 +2,13 @@ package org.rapidgraphql.schemabuilder;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import graphql.language.StringValue;
 
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -37,7 +35,8 @@ public class TypeUtils {
             Character.class,
             Character.TYPE,
             Short.TYPE,
-            Short.class);
+            Short.class,
+            Date.class);
 
 
     public static boolean isNotNullable(AnnotatedType annotatedType) {

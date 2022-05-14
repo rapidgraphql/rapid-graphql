@@ -2,11 +2,11 @@ package org.rapidgraphql.helloworld;
 
 import graphql.kickstart.tools.GraphQLQueryResolver;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.jetbrains.annotations.NotNull;
 import org.rapidgraphql.annotations.GraphQLDefault;
 import org.rapidgraphql.annotations.GraphQLIgnore;
 import org.springframework.stereotype.Component;
 
-import javax.validation.constraints.NotNull;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 

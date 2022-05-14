@@ -1,10 +1,13 @@
 package org.rapidgraphql.schemabuilder;
 
+import graphql.VisibleForTesting;
 import graphql.kickstart.tools.GraphQLMutationResolver;
 import graphql.kickstart.tools.GraphQLQueryResolver;
 import graphql.kickstart.tools.GraphQLResolver;
 import graphql.kickstart.tools.SchemaError;
 import graphql.language.Definition;
+import graphql.language.DirectiveDefinition;
+import graphql.language.DirectiveLocation;
 import graphql.language.EnumTypeDefinition;
 import graphql.language.EnumValueDefinition;
 import graphql.language.FieldDefinition;
@@ -19,8 +22,12 @@ import graphql.language.TypeName;
 import graphql.scalars.ExtendedScalars;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLScalarType;
-import org.jetbrains.annotations.NotNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.rapidgraphql.annotations.GraphQLIgnore;
+import org.rapidgraphql.annotations.GraphQLInputType;
+import org.rapidgraphql.directives.SecuredDirectiveWiring;
 import org.slf4j.Logger;
+import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.AnnotatedParameterizedType;
@@ -28,6 +35,8 @@ import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -62,7 +71,11 @@ public class DefinitionFactory {
     private static final Logger LOGGER = getLogger(DefinitionFactory.class);
     public static final String QUERY_TYPE = "Query";
     public static final String MUTATION_TYPE = "Mutation";
-    private static final List<GraphQLScalarType> scalars = List.of(ExtendedScalars.GraphQLLong);
+    private static final List<GraphQLScalarType> scalars = List.of(
+            ExtendedScalars.GraphQLLong,
+            ExtendedScalars.Date,
+            ExtendedScalars.DateTime
+    );
     private static final Map<java.lang.reflect.Type, Type<?>> scalarTypes = Map.ofEntries(
             entry(Integer.TYPE, nonNullType("Int")),
             entry(Integer.class, nullableType("Int")),
@@ -74,7 +87,9 @@ public class DefinitionFactory {
             entry(Double.TYPE, nonNullType("Float")),
             entry(Double.class, nullableType("Float")),
             entry(Long.TYPE, nullableType(ExtendedScalars.GraphQLLong.getName())),
-            entry(Long.class, nullableType(ExtendedScalars.GraphQLLong.getName()))
+            entry(Long.class, nullableType(ExtendedScalars.GraphQLLong.getName())),
+            entry(LocalDate.class, nullableType(ExtendedScalars.Date.getName())),
+            entry(OffsetDateTime.class, nullableType(ExtendedScalars.DateTime.getName()))
     );
     private Map<String, TypeKind> discoveredTypes = new HashMap<>();
     private Queue<DiscoveredClass> discoveredTypesQueue = new ArrayDeque<>();
@@ -107,6 +122,7 @@ public class DefinitionFactory {
         boolean skipFirstParameter = !upperLevelResolver;
         String name;
         Class<?> sourceType = null;
+        Class<?> resolverType = ClassUtils.getUserClass(resolver);
         if (resolver instanceof GraphQLQueryResolver) {
             name = QUERY_TYPE;
         } else if(resolver instanceof GraphQLMutationResolver) {
@@ -114,15 +130,16 @@ public class DefinitionFactory {
         } else {
             Optional<DiscoveredClass> discoveredClass = extractResolverType(resolver);
             if (discoveredClass.isEmpty()) {
-                throw new IllegalStateException("Invalid resolver provided " + resolver.getClass().getName());
+                throw new IllegalStateException("Invalid resolver provided " + resolverType.getName());
             }
             discoverType(discoveredClass.get(), TypeKind.OUTPUT_TYPE);
             name = discoveredClass.get().getName();
             sourceType = discoveredClass.get().getClazz();
         }
+        LOGGER.info("Processing {} resolver: {}", name, resolverType.getName());
 
         final Class<?> finalSourceType = sourceType;
-        Method[] resolverDeclaredMethods = ReflectionUtils.getUniqueDeclaredMethods(resolver.getClass(),
+        Method[] resolverDeclaredMethods = ReflectionUtils.getUniqueDeclaredMethods(resolverType,
                 method -> resolverMethodFilter(finalSourceType, method));
         List<FieldDefinition> typeFields = Arrays.stream(resolverDeclaredMethods)
                 .map(method -> createFieldDefinition(method, skipFirstParameter))
@@ -156,10 +173,20 @@ public class DefinitionFactory {
     public Definition<?> createTypeDefinition(DiscoveredClass discoveredClass) {
         Method[] declaredMethods = ReflectionUtils.getUniqueDeclaredMethods(discoveredClass.getClazz(),
                 MethodsFilter::typeMethodFilter);
+        Set<String> ignoredFields = getOutputTypeIgnoredFields(discoveredClass);
         List<FieldDefinition> typeFields = Arrays.stream(declaredMethods)
                 .map(method -> createFieldDefinition(method, false))
+                .filter(fieldDefinition -> !ignoredFields.contains(fieldDefinition.getName()))
                 .collect(Collectors.toList());
         return createTypeDefinition(discoveredClass.getName(), typeFields);
+    }
+
+    private Set<String> getOutputTypeIgnoredFields(DiscoveredClass discoveredClass) {
+        Set<String> fieldsToIgnore = new HashSet<>();
+        ReflectionUtils.doWithFields(discoveredClass.getClazz(),
+                field -> fieldsToIgnore.add(field.getName()),
+                field -> field.isAnnotationPresent(GraphQLIgnore.class));
+        return fieldsToIgnore;
     }
 
     private Definition<?> createInputTypeDefinition(DiscoveredClass discoveredClass) {
@@ -170,11 +197,21 @@ public class DefinitionFactory {
         if (declaredMethods.length == 0) {
             throw new SchemaError(format("No fields were discovered for input type %s", discoveredClass.getClazz().getName()), null);
         }
+        Set<String> ignoredFields = getInputTypeIgnoredFields(discoveredClass);
         List<InputValueDefinition> inputDefinitions = Arrays.stream(declaredMethods)
+                .filter(method -> !ignoredFields.contains(method.getName()))
                 .map(this::createInputValueDefinition)
                 .collect(Collectors.toList());
         definitionBuilder.inputValueDefinitions(inputDefinitions);
         return definitionBuilder.build();
+    }
+
+    private Set<String> getInputTypeIgnoredFields(DiscoveredClass discoveredClass) {
+        GraphQLInputType annotation = discoveredClass.getClazz().getAnnotation(GraphQLInputType.class);
+        if (annotation == null) {
+            return Set.of();
+        }
+        return Set.of(annotation.ignore());
     }
 
     private InputValueDefinition createInputValueDefinition(Method method) {
@@ -199,17 +236,39 @@ public class DefinitionFactory {
                 .collect(Collectors.toList());
     }
 
-    private Optional<DiscoveredClass> extractResolverType(GraphQLResolver<?> graphQLResolver) {
-        Optional<AnnotatedType> resolverInterface = Arrays.stream(graphQLResolver.getClass().getAnnotatedInterfaces())
+    @VisibleForTesting
+    public Optional<DiscoveredClass> extractResolverType(GraphQLResolver<?> graphQLResolver) {
+        return extractResolverTypeFromClass(
+                ClassUtils.getUserClass(graphQLResolver.getClass()));
+    }
+
+    private Optional<DiscoveredClass> extractResolverTypeFromClass(Class<?> resolverClass) {
+        Optional<AnnotatedType> resolverInterface = Arrays.stream(resolverClass.getAnnotatedInterfaces())
                 .filter(annotatedType -> (annotatedType.getType() instanceof ParameterizedType) &&
                         ((ParameterizedType)annotatedType.getType()).getRawType().equals(GraphQLResolver.class))
                 .findFirst();
         if (resolverInterface.isEmpty()) {
-            return Optional.empty();
+            Class<?> superclass = resolverClass.getSuperclass();
+            return Optional.ofNullable(superclass).flatMap(this::extractResolverTypeFromClass);
         }
         AnnotatedParameterizedType annotatedParameterizedType = (AnnotatedParameterizedType) resolverInterface.get();
         Class<?> clazz = (Class<?>) annotatedParameterizedType.getAnnotatedActualTypeArguments()[0].getType();
-        return Optional.of(DiscoveredClass.builder().name(clazz.getSimpleName()).clazz(clazz).build());
+        return Optional.of(DiscoveredClass.builder()
+                .name(getTypeName(clazz, TypeKind.OUTPUT_TYPE))
+                .clazz(clazz)
+                .typeKind(TypeKind.OUTPUT_TYPE)
+                .build());
+    }
+
+    @NonNull
+    private String getTypeName(Class<?> clazz, TypeKind typeKind) {
+        if (typeKind == TypeKind.INPUT_TYPE) {
+            GraphQLInputType annotation = clazz.getAnnotation(GraphQLInputType.class);
+            if (annotation != null) {
+                return annotation.value();
+            }
+        }
+        return clazz.getSimpleName();
     }
 
     private void discoverType(DiscoveredClass discoveredClass, TypeKind typeKind) {
@@ -265,7 +324,7 @@ public class DefinitionFactory {
         return builder.build();
     }
 
-    @NotNull
+    @NonNull
     private Type<?> convertToOutputGraphQLType(AnnotatedType annotatedType) {
         Optional<AnnotatedParameterizedType> parameterizedType = castToParameterizedType(annotatedType);
         if (parameterizedType.isPresent() && WRAPPER_CLASSES.contains(baseType(parameterizedType.get()))) {
@@ -274,7 +333,7 @@ public class DefinitionFactory {
         return convertToGraphQLType(annotatedType, TypeKind.OUTPUT_TYPE);
     }
 
-    @NotNull
+    @NonNull
     private Type<?> convertToInputGraphQLType(AnnotatedType annotatedType) {
         return convertToGraphQLType(annotatedType, TypeKind.INPUT_TYPE);
     }
@@ -289,7 +348,7 @@ public class DefinitionFactory {
             java.lang.reflect.Type type = annotatedType.getType();
             graphqlType = scalarTypes.get(type);
             if (graphqlType == null) {
-                Optional<DiscoveredClass> simpleClass = tryGetSimpleClass(type);
+                Optional<DiscoveredClass> simpleClass = tryGetSimpleClass(type, typeKind);
                 if (simpleClass.isEmpty()) {
                     throw new RuntimeException("Can't resolve type " + type.getTypeName());
                 }
@@ -303,7 +362,7 @@ public class DefinitionFactory {
         return graphqlType;
     }
 
-    private Optional<DiscoveredClass> tryGetSimpleClass(java.lang.reflect.Type type) {
+    private Optional<DiscoveredClass> tryGetSimpleClass(java.lang.reflect.Type type, TypeKind typeKind) {
         if (type instanceof  ParameterizedType) {
             return Optional.empty();
         }
@@ -314,8 +373,15 @@ public class DefinitionFactory {
         if (Object.class.equals(clazz) || Map.class.isAssignableFrom(clazz) || Collection.class.isAssignableFrom(clazz)) {
             return Optional.empty();
         }
-        return Optional.of(DiscoveredClass.builder().name(clazz.getSimpleName()).clazz(clazz).build());
+        return Optional.of(DiscoveredClass.builder().name(getTypeName(clazz, typeKind)).clazz(clazz).build());
     }
 
-
+    public Definition<?> createRoleDirectiveDefinition() {
+        return DirectiveDefinition.newDirectiveDefinition()
+                .name(SecuredDirectiveWiring.DIRECTIVE_NAME)
+                .inputValueDefinition(
+                        new InputValueDefinition(SecuredDirectiveWiring.DIRECTIVE_ARGUMENT_NAME, new ListType(nonNullType("String"))))
+                .directiveLocation(new DirectiveLocation("FIELD_DEFINITION"))
+                .build();
+    }
 }

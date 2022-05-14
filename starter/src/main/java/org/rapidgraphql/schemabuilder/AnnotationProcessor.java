@@ -1,12 +1,17 @@
 package org.rapidgraphql.schemabuilder;
 
 import graphql.language.Argument;
+import graphql.language.ArrayValue;
 import graphql.language.Description;
 import graphql.language.Directive;
 import graphql.language.NodeDirectivesBuilder;
 import graphql.language.StringValue;
+import graphql.language.Value;
 import org.rapidgraphql.annotations.GraphQLDeprecated;
 import org.rapidgraphql.annotations.GraphQLDescription;
+import org.rapidgraphql.annotations.GraphQLSecured;
+import org.rapidgraphql.directives.SecuredDirectiveWiring;
+import org.slf4j.Logger;
 import org.springframework.core.annotation.MergedAnnotation;
 import org.springframework.core.annotation.MergedAnnotations;
 
@@ -14,15 +19,22 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
+
+import static org.slf4j.LoggerFactory.getLogger;
 
 public class AnnotationProcessor {
 
+    private static final Logger LOGGER = getLogger(AnnotationProcessor.class);
     static final Map<Class<? extends Annotation>, BiConsumer<MergedAnnotation<Annotation>, NodeDirectivesBuilder>> annotationDirectiveProcessors = Map.of(
             GraphQLDeprecated.class, AnnotationProcessor::addDeprecated,
             Deprecated.class, AnnotationProcessor::addJavaDeprecated,
-            GraphQLDescription.class, AnnotationProcessor::addDescription
+            GraphQLDescription.class, AnnotationProcessor::addDescription,
+            GraphQLSecured.class, AnnotationProcessor::addGraphQlSecurity
     );
 
     static public void applyAnnotations(AnnotatedElement element, NodeDirectivesBuilder builder) {
@@ -31,6 +43,22 @@ public class AnnotationProcessor {
                 .forEach(mergedAnnotation -> annotationDirectiveProcessors.get(mergedAnnotation.getType()).accept(mergedAnnotation, builder));
 
     }
+
+    private static void addGraphQlSecurity(MergedAnnotation<Annotation> annotation, NodeDirectivesBuilder builder) {
+        builder.directive(
+                Directive.newDirective()
+                        .name(SecuredDirectiveWiring.DIRECTIVE_NAME)
+                        .argument(new Argument(SecuredDirectiveWiring.DIRECTIVE_ARGUMENT_NAME, getRolesValue(annotation)))
+                        .build());
+    }
+
+    private static ArrayValue getRolesValue(MergedAnnotation<Annotation> annotation) {
+        List<Value> rolesList = Arrays.stream(annotation.getStringArray("roles"))
+                .map(role -> (Value) new StringValue(role))
+                .collect(Collectors.toList());
+        return new ArrayValue(rolesList);
+    }
+
     private static void addJavaDeprecated(MergedAnnotation<Annotation> annotation, NodeDirectivesBuilder builder) {
         builder.directive(
                 Directive.newDirective()

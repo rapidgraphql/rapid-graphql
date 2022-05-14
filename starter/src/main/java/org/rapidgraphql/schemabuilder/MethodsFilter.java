@@ -5,8 +5,11 @@ import org.slf4j.Logger;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 
 import static java.lang.Character.isUpperCase;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -14,7 +17,14 @@ import static org.slf4j.LoggerFactory.getLogger;
 public class MethodsFilter {
     private static final Logger LOGGER = getLogger(MethodsFilter.class);
     private static final Set<String> objectMethodsToSkip = Set.of(
-            "getClass", "equals", "hashCode", "toString", "clone", "notify", "notifyAll", "wait", "finalize", "compareTo");
+            "getClass", "equals", "hashCode", "toString", "clone", "notify", "notifyAll", "wait", "finalize", "compareTo",
+            //cglib methods
+            "isFrozen", "getAdvisorCount", "isProxyTarget", "isExposeProxy", "isPreFiltered", "toProxyConfigString", "isProxyTargetClass");
+
+    private static final Set<Class<?>> unsupportedClasses = Set.of(
+            Object.class, Class.class, Exception.class);
+
+    private static final Predicate<String> unsupportedClassNames = Pattern.compile("org.springframework|org.aopalliance|java.lang.Class").asPredicate();
 
     public static boolean resolverMethodFilter(Class<?> sourceType, Method method) {
         if (!typeMethodFilter(method)) {
@@ -45,11 +55,29 @@ public class MethodsFilter {
         if (isSetMethod(method)) {
             return false;
         }
+        if (hasInvalidParameters(method)) {
+            return false;
+        }
+        if (hasInvalidReturnType(method)) {
+            return false;
+        }
         if (method.getReturnType() == Void.TYPE) {
             LOGGER.info("Skipping method {}::{} because it is returning void", method.getDeclaringClass().getName(), method.getName());
             return false;
         }
         return true;
+    }
+
+    private static boolean hasInvalidReturnType(Method method) {
+        return unsupportedClasses.contains(method.getReturnType())
+                || unsupportedClassNames.test(method.getReturnType().getName());
+    }
+
+    private static boolean hasInvalidParameters(Method method) {
+        return Arrays.stream(method.getParameterTypes())
+                .anyMatch(clazz -> unsupportedClasses.contains(clazz)
+                        || unsupportedClassNames.test(clazz.getName())
+                );
     }
 
     public static boolean inputTypeMethodFilter(Method method) {
@@ -67,6 +95,9 @@ public class MethodsFilter {
         }
         if (method.getParameterCount() != 1) {
             return false;
+        }
+        if (Object.class.equals(method.getParameterTypes()[0])) {
+             return false; // This is a patch to work around problem of generic classes
         }
         return true;
     }
