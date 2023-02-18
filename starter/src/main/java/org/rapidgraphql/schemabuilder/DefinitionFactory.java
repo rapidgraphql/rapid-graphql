@@ -35,6 +35,8 @@ import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.ArrayDeque;
@@ -86,15 +88,23 @@ public class DefinitionFactory {
             entry(Float.class, nullableType("Float")),
             entry(Double.TYPE, nonNullType("Float")),
             entry(Double.class, nullableType("Float")),
-            entry(Long.TYPE, nullableType(ExtendedScalars.GraphQLLong.getName())),
+            entry(Short.TYPE, nonNullType(ExtendedScalars.GraphQLShort.getName())),
+            entry(Short.class, nullableType(ExtendedScalars.GraphQLShort.getName())),
+            entry(Long.TYPE, nonNullType(ExtendedScalars.GraphQLLong.getName())),
             entry(Long.class, nullableType(ExtendedScalars.GraphQLLong.getName())),
+            entry(Byte.TYPE, nonNullType(ExtendedScalars.GraphQLByte.getName())),
+            entry(Byte.class, nullableType(ExtendedScalars.GraphQLByte.getName())),
+            entry(Character.TYPE, nonNullType(ExtendedScalars.GraphQLChar.getName())),
+            entry(Character.class, nullableType(ExtendedScalars.GraphQLChar.getName())),
+            entry(BigDecimal.class, nullableType(ExtendedScalars.GraphQLBigDecimal.getName())),
+            entry(BigInteger.class, nullableType(ExtendedScalars.GraphQLBigInteger.getName())),
             entry(LocalDate.class, nullableType(ExtendedScalars.Date.getName())),
             entry(OffsetDateTime.class, nullableType(ExtendedScalars.DateTime.getName()))
     );
-    private Map<String, TypeKind> discoveredTypes = new HashMap<>();
-    private Queue<DiscoveredClass> discoveredTypesQueue = new ArrayDeque<>();
-    private Set<String> definedClasses = new HashSet<>();
-    private Map<TypeKind, Function<DiscoveredClass, Definition<?>>> definitionFactory = new HashMap<>();
+    private final Map<String, TypeKind> discoveredTypes = new HashMap<>();
+    private final Queue<DiscoveredClass> discoveredTypesQueue = new ArrayDeque<>();
+    private final Set<String> definedClasses = new HashSet<>();
+    private final Map<TypeKind, Function<DiscoveredClass, Definition<?>>> definitionFactory = new HashMap<>();
     private static final Set<Class<?>> WRAPPER_CLASSES = Set.of(Optional.class, Future.class, CompletableFuture.class);
     private final DefaultValueAnnotationProcessor defaultValueAnnotationProcessor;
 
