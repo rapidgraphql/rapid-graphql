@@ -1,7 +1,11 @@
 package org.rapidgraphql.schemabuilder;
 
+import org.jetbrains.annotations.NotNull;
+import org.rapidgraphql.annotations.DataLoaderMethod;
 import org.rapidgraphql.annotations.GraphQLIgnore;
+import org.rapidgraphql.directives.GraphQLDataLoader;
 import org.slf4j.Logger;
+import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -26,6 +30,28 @@ public class MethodsFilter {
 
     private static final Predicate<String> unsupportedClassNames = Pattern.compile("org.springframework|org.aopalliance|java.lang.Class").asPredicate();
 
+    @NotNull
+    public static Method[] getTypeMethods(DiscoveredClass discoveredClass) {
+        return ReflectionUtils.getUniqueDeclaredMethods(discoveredClass.getClazz(),
+                MethodsFilter::typeMethodFilter);
+    }
+
+    @NotNull
+    public static Method[] getInputTypeMethods(DiscoveredClass discoveredClass) {
+        return ReflectionUtils.getUniqueDeclaredMethods(discoveredClass.getClazz(),
+                MethodsFilter::inputTypeMethodFilter);
+    }
+
+    @NotNull
+    public static Method[] getDataLoaderMethods(Class<? extends GraphQLDataLoader> clazz) {
+        return ReflectionUtils.getUniqueDeclaredMethods(clazz,
+                MethodsFilter::dataLoaderMethodFilter);
+    }
+
+    private static boolean dataLoaderMethodFilter(Method method) {
+        return method.isAnnotationPresent(DataLoaderMethod.class);
+    }
+
     public static boolean resolverMethodFilter(Class<?> sourceType, Method method) {
         if (!typeMethodFilter(method)) {
             return false;
@@ -43,13 +69,7 @@ public class MethodsFilter {
     }
 
     public static boolean typeMethodFilter(Method method) {
-        if (objectMethodsToSkip.contains(method.getName())) {
-            return false;
-        }
-        if (isMethodPublicAndNotStatic(method.getModifiers())) {
-            return false;
-        }
-        if (method.isAnnotationPresent(GraphQLIgnore.class)) {
+        if (notAllowedGraphQlMethod(method)) {
             return false;
         }
         if (isSetMethod(method)) {
@@ -81,13 +101,7 @@ public class MethodsFilter {
     }
 
     public static boolean inputTypeMethodFilter(Method method) {
-        if (objectMethodsToSkip.contains(method.getName())) {
-            return false;
-        }
-        if (isMethodPublicAndNotStatic(method.getModifiers())) {
-            return false;
-        }
-        if (method.isAnnotationPresent(GraphQLIgnore.class)) {
+        if (notAllowedGraphQlMethod(method)) {
             return false;
         }
         if (!isSetMethod(method)) {
@@ -100,6 +114,22 @@ public class MethodsFilter {
              return false; // This is a patch to work around problem of generic classes
         }
         return true;
+    }
+
+    private static boolean notAllowedGraphQlMethod(Method method) {
+        if (objectMethodsToSkip.contains(method.getName())) {
+            return true;
+        }
+        if (isMethodPublicAndNotStatic(method.getModifiers())) {
+            return true;
+        }
+        if (method.isAnnotationPresent(GraphQLIgnore.class)) {
+            return true;
+        }
+        if (method.isAnnotationPresent(DataLoaderMethod.class)) {
+            return true;
+        }
+        return false;
     }
 
     private static boolean isSetMethod(Method method) {
@@ -122,6 +152,4 @@ public class MethodsFilter {
         }
         return Optional.empty();
     }
-
-
 }

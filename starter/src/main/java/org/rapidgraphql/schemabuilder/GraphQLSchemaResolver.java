@@ -6,6 +6,7 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import graphql.kickstart.autoconfigure.tools.GraphQLJavaToolsAutoConfiguration;
+import graphql.kickstart.servlet.context.GraphQLServletContextBuilder;
 import graphql.kickstart.tools.GraphQLResolver;
 import graphql.kickstart.tools.PerFieldObjectMapperProvider;
 import graphql.kickstart.tools.SchemaParser;
@@ -15,6 +16,7 @@ import graphql.kickstart.tools.TypeDefinitionFactory;
 import graphql.language.Definition;
 import graphql.language.ScalarTypeDefinition;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.rapidgraphql.directives.GraphQLDataLoader;
 import org.rapidgraphql.directives.GraphQLDirectiveWiring;
 import org.rapidgraphql.directives.RoleExtractor;
 import org.rapidgraphql.directives.SecuredDirectiveWiring;
@@ -37,6 +39,8 @@ import static org.slf4j.LoggerFactory.getLogger;
 public class GraphQLSchemaResolver {
     private static final Logger LOGGER = getLogger(GraphQLSchemaResolver.class);
     private final DefinitionFactory definitionFactory;
+
+    private SchemaParser schemaParser = null;
 
     public GraphQLSchemaResolver() {
         definitionFactory = new DefinitionFactory(new DefaultValueAnnotationProcessorImpl());
@@ -92,6 +96,10 @@ public class GraphQLSchemaResolver {
             List<GraphQLDirectiveWiring> directives,
             PerFieldObjectMapperProvider perFieldObjectMapperProvider
     ) {
+        if (schemaParser != null) {
+            LOGGER.error("Recreating SchemaParser bean");
+            return schemaParser;
+        }
         LOGGER.info("{} resolvers and {} directives found", resolvers.size(), directives.size());
         SchemaParserOptions options = SchemaParserOptions.newOptions()
                 .typeDefinitionFactory(new MyTypeDefinitionFactory(resolvers))
@@ -102,8 +110,13 @@ public class GraphQLSchemaResolver {
                 .options(options)
                 .scalars(definitionFactory.getScalars());
         addDirectives(schemaParserBuilder, directives);
-        return schemaParserBuilder
-                .build();
+        schemaParser = schemaParserBuilder.build();
+        return schemaParser;
+    }
+
+    @Bean
+    public GraphQLServletContextBuilder getGraphQLServletContextBuilder(List<? extends GraphQLDataLoader> dataLoaders) {
+        return new RapidGraphQLContextBuilder(new DataLoaderRegistryFactory(dataLoaders));
     }
 
     private void addDirectives(SchemaParserBuilder schemaParserBuilder, List<GraphQLDirectiveWiring> directives) {

@@ -23,6 +23,7 @@ import graphql.scalars.ExtendedScalars;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLScalarType;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.jetbrains.annotations.NotNull;
 import org.rapidgraphql.annotations.GraphQLIgnore;
 import org.rapidgraphql.annotations.GraphQLInputType;
 import org.rapidgraphql.directives.SecuredDirectiveWiring;
@@ -58,9 +59,7 @@ import java.util.stream.Stream;
 
 import static java.lang.String.format;
 import static java.util.Map.entry;
-import static org.rapidgraphql.schemabuilder.MethodsFilter.normalizeGetName;
-import static org.rapidgraphql.schemabuilder.MethodsFilter.normalizeSetName;
-import static org.rapidgraphql.schemabuilder.MethodsFilter.resolverMethodFilter;
+import static org.rapidgraphql.schemabuilder.MethodsFilter.*;
 import static org.rapidgraphql.schemabuilder.TypeUtils.actualTypeArgument;
 import static org.rapidgraphql.schemabuilder.TypeUtils.baseType;
 import static org.rapidgraphql.schemabuilder.TypeUtils.castToParameterizedType;
@@ -181,8 +180,7 @@ public class DefinitionFactory {
     }
 
     public Definition<?> createTypeDefinition(DiscoveredClass discoveredClass) {
-        Method[] declaredMethods = ReflectionUtils.getUniqueDeclaredMethods(discoveredClass.getClazz(),
-                MethodsFilter::typeMethodFilter);
+        Method[] declaredMethods = getTypeMethods(discoveredClass);
         Set<String> ignoredFields = getOutputTypeIgnoredFields(discoveredClass);
         List<FieldDefinition> typeFields = Arrays.stream(declaredMethods)
                 .map(method -> createFieldDefinition(method, false))
@@ -202,8 +200,7 @@ public class DefinitionFactory {
     private Definition<?> createInputTypeDefinition(DiscoveredClass discoveredClass) {
         InputObjectTypeDefinition.Builder definitionBuilder = InputObjectTypeDefinition.newInputObjectDefinition();
         definitionBuilder.name(discoveredClass.getName());
-        Method[] declaredMethods = ReflectionUtils.getUniqueDeclaredMethods(discoveredClass.getClazz(),
-                MethodsFilter::inputTypeMethodFilter);
+        Method[] declaredMethods = getInputTypeMethods(discoveredClass);
         if (declaredMethods.length == 0) {
             throw new SchemaError(format("No fields were discovered for input type %s", discoveredClass.getClazz().getName()), null);
         }
