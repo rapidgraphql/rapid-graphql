@@ -6,11 +6,11 @@
     <parent>
         <groupId>org.rapid-graphql</groupId>
         <artifactId>rapid-graphql</artifactId>
-        <version>0.0.3-SNAPSHOT</version>
+        <version>0.0.3</version>
     </parent>
 
     <artifactId>rapid-graphql-starter</artifactId>
-    <version>0.0.3-SNAPSHOT</version>
+    <version>0.0.3</version>
     <packaging>jar</packaging>
 
     <name>starter</name>

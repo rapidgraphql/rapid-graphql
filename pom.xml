@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>org.rapid-graphql</groupId>
 	<artifactId>rapid-graphql</artifactId>
-	<version>0.0.3-SNAPSHOT</version>
+	<version>0.0.3</version>
 	<name>rapid-graphql</name>
 	<description>Demo graphql booster app</description>
 	<modules>
@@ -80,5 +80,11 @@
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
-
+	<distributionManagement>
+		<repository>
+			<id>github-rapidgraphql</id>
+			<name>GitHub rapidgraphql/rapid-graphql Apache Maven Packages</name>
+			<url>https://maven.pkg.github.com/rapidgraphql/rapid-graphql</url>
+		</repository>
+	</distributionManagement>
 </project>
