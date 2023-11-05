@@ -5,12 +5,12 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.6.3</version>
+		<version>2.7.15</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>org.rapid-graphql</groupId>
 	<artifactId>rapid-graphql</artifactId>
-	<version>0.0.3</version>
+	<version>0.0.4</version>
 	<name>rapid-graphql</name>
 	<description>Demo graphql booster app</description>
 	<modules>
@@ -21,11 +21,11 @@
 
 	<properties>
 		<java.version>11</java.version>
-		<graphql-spring-boot-starter.version>12.0.0</graphql-spring-boot-starter.version>
-		<graphql-java.version>17.3</graphql-java.version>
+		<graphql-spring-boot-starter.version>14.0.0</graphql-spring-boot-starter.version>
+		<graphql-java.version>21.0</graphql-java.version>
 		<checker-qual.version>3.21.2</checker-qual.version>
-		<graphql-scalars.version>17.0</graphql-scalars.version>
-		<spring-boot.version>2.6.3</spring-boot.version>
+		<graphql-scalars.version>17.1</graphql-scalars.version>
+		<spring-boot.version>2.7.15</spring-boot.version>
 	</properties>
 	<dependencyManagement>
 		<dependencies>

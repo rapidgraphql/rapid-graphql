@@ -16,6 +16,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 import static java.lang.Character.isUpperCase;
+import static org.rapidgraphql.schemabuilder.TypeUtils.isPublisherType;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class MethodsFilter {
@@ -52,7 +53,7 @@ public class MethodsFilter {
         return method.isAnnotationPresent(DataLoaderMethod.class);
     }
 
-    public static boolean resolverMethodFilter(Class<?> sourceType, Method method) {
+    public static boolean resolverMethodFilter(Class<?> sourceType, Method method, boolean isSubscription) {
         if (!typeMethodFilter(method)) {
             return false;
         }
@@ -61,6 +62,14 @@ public class MethodsFilter {
                     method.getDeclaringClass().getName(), method.getName(), sourceType.getName());
             return false;
         }
+        if (isSubscription) {
+            if ( !isPublisherType(method.getReturnType()) ) {
+                LOGGER.warn("Skipping method {}::{} in subscription resolver because it doesn't return publisher type",
+                        method.getDeclaringClass().getName(), method.getName());
+                return false;
+            }
+        }
+
         return true;
     }
 

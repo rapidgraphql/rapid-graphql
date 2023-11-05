@@ -2,6 +2,7 @@ package org.rapidgraphql.schemabuilder;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.reactivestreams.Publisher;
 
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
@@ -60,7 +61,16 @@ public class TypeUtils {
         return List.class.isAssignableFrom(type);
     }
 
-    public static Class<?> baseType(AnnotatedParameterizedType annotatedParameterizedType) {
+    public static boolean isPublisherType(AnnotatedParameterizedType type) {
+        Class<?> clazz = baseType(type);
+        return clazz.getTypeParameters().length==1 && Publisher.class.isAssignableFrom(clazz);
+    }
+
+    public static boolean isPublisherType(Class<?> type) {
+        return Publisher.class.isAssignableFrom(type);
+    }
+
+        public static Class<?> baseType(AnnotatedParameterizedType annotatedParameterizedType) {
         Type rawType = ((ParameterizedType) annotatedParameterizedType.getType()).getRawType();
         if (!(rawType instanceof Class<?>)) {
             throw new RuntimeException("Parameterized type " + rawType.getTypeName() + " can't be processed");

@@ -1,40 +1,44 @@
 package org.rapidgraphql.schemabuilder;
 
-import graphql.kickstart.execution.context.DefaultGraphQLContext;
-import graphql.kickstart.execution.context.GraphQLContext;
-import graphql.kickstart.servlet.context.DefaultGraphQLServletContext;
-import graphql.kickstart.servlet.context.DefaultGraphQLWebSocketContext;
+import graphql.kickstart.execution.context.DefaultGraphQLContextBuilder;
+import graphql.kickstart.execution.context.GraphQLKickstartContext;
 import graphql.kickstart.servlet.context.GraphQLServletContextBuilder;
+//import jakarta.servlet.http.HttpServletRequest;
+//import jakarta.servlet.http.HttpServletResponse;
+//import jakarta.websocket.Session;
+//import jakarta.websocket.server.HandshakeRequest;
 import org.dataloader.DataLoaderRegistry;
-import org.springframework.stereotype.Component;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.websocket.Session;
 import javax.websocket.server.HandshakeRequest;
 
-public class RapidGraphQLContextBuilder implements GraphQLServletContextBuilder {
+import java.util.HashMap;
+import java.util.Map;
+
+public class RapidGraphQLContextBuilder extends DefaultGraphQLContextBuilder
+        implements GraphQLServletContextBuilder {
     private final DataLoaderRegistryFactory dataLoaderRegistryFactory;
 
     public RapidGraphQLContextBuilder(DataLoaderRegistryFactory dataLoaderRegistryFactory) {
         this.dataLoaderRegistryFactory = dataLoaderRegistryFactory;
     }
 
+
     @Override
-    public GraphQLContext build(HttpServletRequest req, HttpServletResponse response) {
-        return DefaultGraphQLServletContext.createServletContext(buildDataLoaderRegistry(), null).with(req).with(response)
-                .build();
+    public GraphQLKickstartContext build(HttpServletRequest request, HttpServletResponse response) {
+        Map<Object, Object> map = new HashMap<>();
+        map.put(HttpServletRequest.class, request);
+        map.put(HttpServletResponse.class, response);
+        return GraphQLKickstartContext.of(buildDataLoaderRegistry(), map);
     }
 
     @Override
-    public GraphQLContext build() {
-        return new DefaultGraphQLContext(buildDataLoaderRegistry(), null);
-    }
-
-    @Override
-    public GraphQLContext build(Session session, HandshakeRequest request) {
-        return DefaultGraphQLWebSocketContext.createWebSocketContext(buildDataLoaderRegistry(), null).with(session)
-                .with(request).build();
+    public GraphQLKickstartContext build(Session session, HandshakeRequest handshakeRequest) {
+        Map<Object, Object> map = new HashMap<>();
+        map.put(Session.class, session);
+        map.put(HandshakeRequest.class, handshakeRequest);
+        return GraphQLKickstartContext.of(buildDataLoaderRegistry(), map);
     }
 
     private DataLoaderRegistry buildDataLoaderRegistry() {

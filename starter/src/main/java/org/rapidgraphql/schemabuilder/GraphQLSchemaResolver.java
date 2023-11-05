@@ -65,7 +65,9 @@ public class GraphQLSchemaResolver {
         definitions.addAll(definitionFactory.getScalars().stream()
                 .map(scalar -> ScalarTypeDefinition.newScalarTypeDefinition().name(scalar.getName()).build())
                 .collect(Collectors.toList()));
-        definitions.addAll(resolvers.stream().map(resolver -> definitionFactory.createTypeDefinition(resolver)).collect(Collectors.toList()));
+        definitions.addAll(resolvers.stream()
+                .map(definitionFactory::createTypeDefinition)
+                .collect(Collectors.toList()));
         definitions.addAll(definitionFactory.processTypesQueue());
         return definitions;
     }

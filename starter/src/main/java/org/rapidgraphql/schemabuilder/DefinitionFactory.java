@@ -1,29 +1,13 @@
 package org.rapidgraphql.schemabuilder;
 
 import graphql.VisibleForTesting;
-import graphql.kickstart.tools.GraphQLMutationResolver;
-import graphql.kickstart.tools.GraphQLQueryResolver;
-import graphql.kickstart.tools.GraphQLResolver;
-import graphql.kickstart.tools.SchemaError;
-import graphql.language.Definition;
-import graphql.language.DirectiveDefinition;
-import graphql.language.DirectiveLocation;
-import graphql.language.EnumTypeDefinition;
-import graphql.language.EnumValueDefinition;
-import graphql.language.FieldDefinition;
-import graphql.language.InputObjectTypeDefinition;
-import graphql.language.InputValueDefinition;
-import graphql.language.ListType;
-import graphql.language.NonNullType;
-import graphql.language.ObjectTypeDefinition;
-import graphql.language.ObjectTypeExtensionDefinition;
+import graphql.kickstart.tools.*;
 import graphql.language.Type;
-import graphql.language.TypeName;
+import graphql.language.*;
 import graphql.scalars.ExtendedScalars;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLScalarType;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.jetbrains.annotations.NotNull;
 import org.rapidgraphql.annotations.GraphQLIgnore;
 import org.rapidgraphql.annotations.GraphQLInputType;
 import org.rapidgraphql.directives.SecuredDirectiveWiring;
@@ -31,26 +15,12 @@ import org.slf4j.Logger;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
 
-import java.lang.reflect.AnnotatedParameterizedType;
-import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.function.Function;
@@ -60,11 +30,7 @@ import java.util.stream.Stream;
 import static java.lang.String.format;
 import static java.util.Map.entry;
 import static org.rapidgraphql.schemabuilder.MethodsFilter.*;
-import static org.rapidgraphql.schemabuilder.TypeUtils.actualTypeArgument;
-import static org.rapidgraphql.schemabuilder.TypeUtils.baseType;
-import static org.rapidgraphql.schemabuilder.TypeUtils.castToParameterizedType;
-import static org.rapidgraphql.schemabuilder.TypeUtils.isListType;
-import static org.rapidgraphql.schemabuilder.TypeUtils.isNotNullable;
+import static org.rapidgraphql.schemabuilder.TypeUtils.*;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class DefinitionFactory {
@@ -72,6 +38,7 @@ public class DefinitionFactory {
     private static final Logger LOGGER = getLogger(DefinitionFactory.class);
     public static final String QUERY_TYPE = "Query";
     public static final String MUTATION_TYPE = "Mutation";
+    public static final String SUBSCRIPTION_TYPE = "Subscription";
     private static final List<GraphQLScalarType> scalars = List.of(
             ExtendedScalars.GraphQLLong,
             ExtendedScalars.Date,
@@ -132,10 +99,14 @@ public class DefinitionFactory {
         String name;
         Class<?> sourceType = null;
         Class<?> resolverType = ClassUtils.getUserClass(resolver);
+        boolean isSubscription = false;
         if (resolver instanceof GraphQLQueryResolver) {
             name = QUERY_TYPE;
         } else if(resolver instanceof GraphQLMutationResolver) {
             name = MUTATION_TYPE;
+        } else if(resolver instanceof GraphQLSubscriptionResolver) {
+            name = SUBSCRIPTION_TYPE;
+            isSubscription = true;
         } else {
             Optional<DiscoveredClass> discoveredClass = extractResolverType(resolver);
             if (discoveredClass.isEmpty()) {
@@ -148,8 +119,9 @@ public class DefinitionFactory {
         LOGGER.info("Processing {} resolver: {}", name, resolverType.getName());
 
         final Class<?> finalSourceType = sourceType;
+        boolean finalIsSubscription = isSubscription;
         Method[] resolverDeclaredMethods = ReflectionUtils.getUniqueDeclaredMethods(resolverType,
-                method -> resolverMethodFilter(finalSourceType, method));
+                method -> resolverMethodFilter(finalSourceType, method, finalIsSubscription));
         List<FieldDefinition> typeFields = Arrays.stream(resolverDeclaredMethods)
                 .map(method -> createFieldDefinition(method, skipFirstParameter))
                 .collect(Collectors.toList());
@@ -348,7 +320,10 @@ public class DefinitionFactory {
     private Type<?> convertToGraphQLType(AnnotatedType annotatedType, TypeKind typeKind) {
         Optional<AnnotatedParameterizedType> parameterizedType = castToParameterizedType(annotatedType);
         Type<?> graphqlType;
-        if (parameterizedType.isPresent() && isListType(parameterizedType.get())) {
+        if (typeKind == TypeKind.OUTPUT_TYPE && parameterizedType.isPresent() && isPublisherType(parameterizedType.get())) {
+            AnnotatedType typeOfParameter = actualTypeArgument(parameterizedType.get(), 0);
+            graphqlType = convertToGraphQLType(typeOfParameter, typeKind);
+        } else if (parameterizedType.isPresent() && isListType(parameterizedType.get())) {
             AnnotatedType typeOfParameter = actualTypeArgument(parameterizedType.get(), 0);
             graphqlType = new ListType(convertToGraphQLType(typeOfParameter, typeKind));
         } else {
