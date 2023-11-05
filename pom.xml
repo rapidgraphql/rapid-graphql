@@ -82,8 +82,8 @@
 	</dependencyManagement>
 	<distributionManagement>
 		<repository>
-			<id>github-rapidgraphql</id>
-			<name>GitHub rapidgraphql/rapid-graphql Apache Maven Packages</name>
+			<id>github</id>
+			<name>GitHub Packages</name>
 			<url>https://maven.pkg.github.com/rapidgraphql/rapid-graphql</url>
 		</repository>
 	</distributionManagement>
