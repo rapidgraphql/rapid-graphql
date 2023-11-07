@@ -24,7 +24,10 @@ public class MethodsFilter {
     private static final Set<String> objectMethodsToSkip = Set.of(
             "getClass", "equals", "hashCode", "toString", "clone", "notify", "notifyAll", "wait", "finalize", "compareTo",
             //cglib methods
-            "isFrozen", "getAdvisorCount", "isProxyTarget", "isExposeProxy", "isPreFiltered", "toProxyConfigString", "isProxyTargetClass");
+            "isFrozen", "getAdvisorCount", "isProxyTarget", "isExposeProxy", "isPreFiltered", "toProxyConfigString", "isProxyTargetClass",
+            //lombok methods
+            "toBuilder"
+            );
 
     private static final Set<Class<?>> unsupportedClasses = Set.of(
             Object.class, Class.class, Exception.class);
@@ -106,6 +109,7 @@ public class MethodsFilter {
         return Arrays.stream(method.getParameterTypes())
                 .anyMatch(clazz -> unsupportedClasses.contains(clazz)
                         || unsupportedClassNames.test(clazz.getName())
+                        || clazz.isArray()  // arrays are unsupported as arguments
                 );
     }
 

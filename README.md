@@ -47,12 +47,12 @@ In ``pom.xml`` you should add following dependencies:
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
-            <version>2.6.3</version>
+            <version>2.7.15</version>
         </dependency>
         <dependency>
-            <groupId>org.rapid-graphql</groupId>
+            <groupId>io.github.rapidgraphql</groupId>
             <artifactId>rapid-graphql-starter</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <version>0.0.7-SNAPSHOT</version>
         </dependency>
 
         <dependency> <!-- Recommended -->

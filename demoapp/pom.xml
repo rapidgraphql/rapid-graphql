@@ -4,13 +4,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.rapid-graphql</groupId>
+        <groupId>io.github.rapidgraphql</groupId>
         <artifactId>rapid-graphql</artifactId>
-        <version>0.0.4</version>
+        <version>0.0.7-SNAPSHOT</version>
     </parent>
 
     <artifactId>rapid-graphql-demoapp</artifactId>
-    <version>0.0.4</version>
+    <version>0.0.7-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>demoapp</name>
@@ -40,9 +40,9 @@
             <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.rapid-graphql</groupId>
+            <groupId>io.github.rapidgraphql</groupId>
             <artifactId>rapid-graphql-starter</artifactId>
-            <version>0.0.4</version>
+            <version>0.0.7-SNAPSHOT</version>
         </dependency>
 
         <dependency>

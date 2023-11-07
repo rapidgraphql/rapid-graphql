@@ -8,9 +8,9 @@
 		<version>2.7.15</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>org.rapid-graphql</groupId>
+	<groupId>io.github.rapidgraphql</groupId>
 	<artifactId>rapid-graphql</artifactId>
-	<version>0.0.4</version>
+	<version>0.0.7-SNAPSHOT</version>
 	<name>rapid-graphql</name>
 	<description>Demo graphql booster app</description>
 	<modules>
@@ -80,11 +80,62 @@
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
+<!--	<distributionManagement>-->
+<!--		<repository>-->
+<!--			<id>github-rapidgraphql</id>-->
+<!--			<name>GitHub rapidgraphql/rapid-graphql Apache Maven Packages</name>-->
+<!--			<url>https://maven.pkg.github.com/rapidgraphql/rapid-graphql</url>-->
+<!--		</repository>-->
+<!--	</distributionManagement>-->
 	<distributionManagement>
+		<snapshotRepository>
+			<id>ossrh</id>
+			<url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+		</snapshotRepository>
 		<repository>
-			<id>github</id>
-			<name>GitHub Packages</name>
-			<url>https://maven.pkg.github.com/rapidgraphql/rapid-graphql</url>
+			<id>ossrh</id>
+			<url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
 		</repository>
 	</distributionManagement>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<version>2.2.1</version>
+				<executions>
+					<execution>
+						<id>attach-sources</id>
+						<goals>
+							<goal>jar-no-fork</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>3.6.0</version>
+				<executions>
+					<execution>
+						<id>attach-javadocs</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.sonatype.plugins</groupId>
+				<artifactId>nexus-staging-maven-plugin</artifactId>
+				<version>1.6.13</version>
+				<extensions>true</extensions>
+				<configuration>
+					<serverId>ossrh</serverId>
+					<nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
+					<autoReleaseAfterClose>true</autoReleaseAfterClose>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 </project>

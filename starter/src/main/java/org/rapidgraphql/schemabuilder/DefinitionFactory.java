@@ -11,6 +11,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.rapidgraphql.annotations.GraphQLIgnore;
 import org.rapidgraphql.annotations.GraphQLInputType;
 import org.rapidgraphql.directives.SecuredDirectiveWiring;
+import org.rapidgraphql.scalars.TimestampScalar;
 import org.slf4j.Logger;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
@@ -42,7 +43,8 @@ public class DefinitionFactory {
     private static final List<GraphQLScalarType> scalars = List.of(
             ExtendedScalars.GraphQLLong,
             ExtendedScalars.Date,
-            ExtendedScalars.DateTime
+            ExtendedScalars.DateTime,
+            TimestampScalar.INSTANCE
     );
     private static final Map<java.lang.reflect.Type, Type<?>> scalarTypes = Map.ofEntries(
             entry(Integer.TYPE, nonNullType("Int")),
@@ -65,7 +67,8 @@ public class DefinitionFactory {
             entry(BigDecimal.class, nullableType(ExtendedScalars.GraphQLBigDecimal.getName())),
             entry(BigInteger.class, nullableType(ExtendedScalars.GraphQLBigInteger.getName())),
             entry(LocalDate.class, nullableType(ExtendedScalars.Date.getName())),
-            entry(OffsetDateTime.class, nullableType(ExtendedScalars.DateTime.getName()))
+            entry(OffsetDateTime.class, nullableType(ExtendedScalars.DateTime.getName())),
+            entry(java.sql.Timestamp.class, nullableType(TimestampScalar.INSTANCE.getName()))
     );
     private final Map<String, TypeKind> discoveredTypes = new HashMap<>();
     private final Queue<DiscoveredClass> discoveredTypesQueue = new ArrayDeque<>();
@@ -132,7 +135,9 @@ public class DefinitionFactory {
         List<Definition<?>> definitions = new ArrayList<>();
         while (!discoveredTypesQueue.isEmpty()) {
             DiscoveredClass discoveredClass = discoveredTypesQueue.remove();
+            LOGGER.info("Begin processing {} {} as {}", discoveredClass.getTypeKind(), discoveredClass.getClazz().getName(), discoveredClass.getName());
             definitions.add(definitionFactory.get(discoveredClass.getTypeKind()).apply(discoveredClass));
+            LOGGER.info("End processing {} {} as {}", discoveredClass.getTypeKind(), discoveredClass.getClazz().getName(), discoveredClass.getName());
         }
         return definitions;
     }
