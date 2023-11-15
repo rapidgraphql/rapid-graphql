@@ -4,14 +4,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
-import org.rapidgraphql.annotations.GraphQLInterface;
+import org.rapidgraphql.annotations.GraphQLImplementation;
 
 @Getter
 @Setter
 @SuperBuilder
 @NoArgsConstructor
-@GraphQLInterface
-public class FilmCharacter {
-    private Long id;
-    private String name;
+@GraphQLImplementation
+public class Human extends FilmCharacter{
+    Float height;
 }

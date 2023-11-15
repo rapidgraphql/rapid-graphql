@@ -4,6 +4,7 @@ import graphql.kickstart.tools.GraphQLResolver;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.rapidgraphql.annotations.GraphQLDeprecated;
 import org.rapidgraphql.annotations.GraphQLDescription;
+import org.rapidgraphql.annotations.NotNull;
 import org.rapidgraphql.starwars.model.Episode;
 import org.rapidgraphql.starwars.model.FilmCharacter;
 import org.rapidgraphql.starwars.repository.FilmCharacterRepository;
@@ -21,12 +22,12 @@ public class FilmCharacterResolver implements GraphQLResolver<FilmCharacter> {
     }
 
     @GraphQLDescription("returns list of episodes in which this character appears")
-    public @NonNull List<@NonNull Episode> getAppearsIn(FilmCharacter character) {
+    public @NotNull List<@NotNull Episode> getAppearsIn(FilmCharacter character) {
         return filmCharacterRepository.getAppearsInById(character.getId());
     }
 
-    @GraphQLDeprecated(reason = "Friendship is a fluent thing and may change from episode to episode, so we do not recommend to use this api")
-    public List<@NonNull FilmCharacter> getFriends(FilmCharacter character) {
+    @GraphQLDeprecated("Friendship is a fluent thing and may change from episode to episode, so we do not recommend to use this api")
+    public List<@NotNull FilmCharacter> getFriends(FilmCharacter character) {
         return filmCharacterRepository.getFriendsById(character.getId()).stream()
                 .map(filmCharacterRepository::getCharacterById)
                 .collect(Collectors.toList());

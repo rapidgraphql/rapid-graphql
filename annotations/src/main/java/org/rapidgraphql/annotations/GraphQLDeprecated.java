@@ -11,8 +11,8 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.TYPE, ElementType.FIELD})
 public @interface GraphQLDeprecated {
     @AliasFor("reason")
-    String value() default "";
+    String value() default ""; // deprecation reason
 
     @AliasFor("value")
-    String reason() default "";
+    String reason() default ""; // deprecation reason
 }

@@ -9,6 +9,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -52,29 +53,15 @@ class DefinitionFactoryTest {
     @InjectMocks
     private DefinitionFactory definitionFactory;
 
-    public static class ResolverLogic implements GraphQLResolver<String>
-    {}
-    public static class CglibResolverLogic extends ResolverLogic
-    {}
-
-    @Test
-    public void extractResolverType() {
-        CglibResolverLogic cglibResolverLogic = new CglibResolverLogic();
-        Optional<DiscoveredClass> discoveredClass = definitionFactory.extractResolverType(cglibResolverLogic);
-        assertTrue(discoveredClass.isPresent());
-        DiscoveredClass expected = DiscoveredClass.builder()
-                .name("String")
-                .clazz(String.class)
-                .typeKind(TypeKind.OUTPUT_TYPE)
-                .build();
-        assertEquals(expected, discoveredClass.get());
-    }
 
     @Test
     public void outputTypeExtendsGenerics() {
-        Definition<?> actual = definitionFactory.createTypeDefinition(
-                new DiscoveredClass("MyPairIntString", MyPairIntString.class, TypeKind.OUTPUT_TYPE));
-        System.out.println(actual);
+        Stream<Definition<?>> actual = definitionFactory.createOutputTypeDefinition(
+                DiscoveredClass.builder().name("MyPairIntString")
+                        .clazz(MyPairIntString.class).typeKind(TypeKind.OUTPUT_TYPE).build());
+        Optional<Definition<?>> definition = actual.findFirst();
+        assertTrue(definition.isPresent());
+        System.out.println(definition.get());
     }
 
 }

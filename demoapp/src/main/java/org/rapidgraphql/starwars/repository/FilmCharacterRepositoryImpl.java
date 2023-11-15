@@ -3,14 +3,13 @@ package org.rapidgraphql.starwars.repository;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.tuple.Pair;
+import org.rapidgraphql.starwars.model.Droid;
 import org.rapidgraphql.starwars.model.Episode;
 import org.rapidgraphql.starwars.model.FilmCharacter;
+import org.rapidgraphql.starwars.model.Human;
 import org.springframework.stereotype.Component;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
@@ -46,14 +45,18 @@ public class FilmCharacterRepositoryImpl implements FilmCharacterRepository {
         appearsInMultimap.put(LEIA_ORGANA, Episode.JEDI);
     }
     private static Map<Long, FilmCharacter> characters = Map.ofEntries(
-            characterEntry(R_2_D_2, "R2-D2"),
-            characterEntry(LUKE_SKYWALKER, "Luke Skywalker"),
-            characterEntry(LEIA_ORGANA, "Han Solo"),
-            characterEntry(HAN_SOLO, "Leia Organa")
+            droidEntry(R_2_D_2, "R2-D2", "Astromech"),
+            humanEntry(LUKE_SKYWALKER, "Luke Skywalker", 1.7f),
+            humanEntry(LEIA_ORGANA, "Han Solo", 1.8f),
+            humanEntry(HAN_SOLO, "Leia Organa", 1.5f)
     );
 
-    private static Map.Entry<Long, FilmCharacter> characterEntry(Long id, String name) {
-        return Map.entry(id, FilmCharacter.builder().id(id).name(name).build());
+    private static Map.Entry<Long, FilmCharacter> humanEntry(Long id, String name, Float height) {
+        return Map.entry(id, Human.builder().id(id).name(name).height(height).build());
+    }
+
+    private static Map.Entry<Long, FilmCharacter> droidEntry(Long id, String name, String primaryFunction) {
+        return Map.entry(id, Droid.builder().id(id).name(name).primaryFunction(primaryFunction).build());
     }
 
     @Override
@@ -71,12 +74,16 @@ public class FilmCharacterRepositoryImpl implements FilmCharacterRepository {
 
     @Override
     public List<Episode> getAppearsInById(Long id) {
-        Collection<Episode> episodes = appearsInMultimap.get(id);
-        return episodes!=null? (List<Episode>)episodes: List.of();
+        return (List<Episode>)appearsInMultimap.asMap().getOrDefault(id, List.of());
     }
 
     @Override
     public FilmCharacter getCharacterById(Long id) {
         return characters.get(id);
+    }
+
+    @Override
+    public List<FilmCharacter> getAllCharacters() {
+        return new ArrayList<>(characters.values());
     }
 }

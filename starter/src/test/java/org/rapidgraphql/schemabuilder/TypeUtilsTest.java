@@ -1,8 +1,13 @@
 package org.rapidgraphql.schemabuilder;
 
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.rapidgraphql.annotations.GraphQLImplementation;
+import org.rapidgraphql.annotations.GraphQLInterface;
 
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
@@ -59,4 +64,5 @@ class TypeUtilsTest {
         Optional<AnnotatedType> annotatedType3 = TypeUtils.extractListElementType(annotatedType2.get());
         assertFalse(annotatedType3.isPresent());
     }
+
 }

@@ -60,7 +60,7 @@ public class MethodsFilter {
         if (!typeMethodFilter(method)) {
             return false;
         }
-        if (sourceType!=null && (method.getParameterCount()<1 || !method.getParameterTypes()[0].equals(sourceType))) {
+        if (sourceType!=null && (method.getParameterCount()<1 || !method.getParameterTypes()[0].isAssignableFrom(sourceType))) {
             LOGGER.warn("Skipping method {}::{} because it's first parameter should match resolver source type {}",
                     method.getDeclaringClass().getName(), method.getName(), sourceType.getName());
             return false;

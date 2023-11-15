@@ -2,23 +2,29 @@ package org.rapidgraphql.schemabuilder;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.rapidgraphql.annotations.GraphQLImplementation;
+import org.rapidgraphql.exceptions.GraphQLSchemaGenerationException;
 import org.reactivestreams.Publisher;
+import org.slf4j.Logger;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.core.type.filter.AnnotationTypeFilter;
+import org.springframework.util.ClassUtils;
 
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static java.lang.String.format;
+import static org.slf4j.LoggerFactory.getLogger;
 
 public class TypeUtils {
+    private static final Logger LOGGER = getLogger(TypeUtils.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final Predicate<String> notNullPredicate = Pattern.compile("\\b(NotNull|NonNull)\\b").asPredicate();
     private static final Set<Type> simpleTypes = Set.of(

@@ -10,4 +10,5 @@ public interface FilmCharacterRepository {
     List<Long> getFriendsById(Long name);
     List<Episode> getAppearsInById(Long id);
     FilmCharacter getCharacterById(Long id);
+    List<FilmCharacter> getAllCharacters();
 }

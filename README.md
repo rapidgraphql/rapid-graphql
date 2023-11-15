@@ -52,7 +52,7 @@ In ``pom.xml`` you should add following dependencies:
         <dependency>
             <groupId>io.github.rapidgraphql</groupId>
             <artifactId>rapid-graphql-starter</artifactId>
-            <version>0.0.7-SNAPSHOT</version>
+            <version>0.0.8-SNAPSHOT</version>
         </dependency>
 
         <dependency> <!-- Recommended -->
@@ -65,3 +65,127 @@ In ``pom.xml`` you should add following dependencies:
 
 That's it, hello world graphql application is ready.
 You can go to http://localhost:8080/graphiql
+
+## Supported Concepts
+### Queries & Types
+Schema is automatically generated from multiple Query Resolvers -> Query type, and Types and Type Resolvers, e.g:
+
+```java
+import jdk.jfr.DataAmount;
+
+@Service
+class Query1 implements GraphQLQueryResolver {
+    public String helloWorld() {
+        return "Hello World!!";
+    }
+}
+
+@Data
+class User {
+    String name;
+}
+
+@Service
+class Query2 implements GraphQLQueryResolver {
+    public User hello(String name) {
+        return new User(name);
+    }
+}
+
+@Service
+class UserResolver implements GraphQLResolver<User> {
+    public String greeting(User user) {
+        return "Mr. " + user.getName();
+    }
+}
+```
+
+Following schema would be generated:
+```
+type Query {
+    helloWorld: String
+    hello(name: String): User
+}
+
+type User {
+    name: String
+    greeting: String
+}
+```
+
+### Mutations and input types
+Input types are detected automatically if type appears as function parameter.
+
+```java
+@Data
+class UserInput {
+    String name;
+}
+@Service
+class MyMutation implements GraphQLQueryResolver {
+    User addUser(UserInput user) {
+        return new User(user.getName());
+    }
+}
+```
+Generates following schema:
+```
+input UserInput {
+    name: String
+}
+type Mutation {
+    addUser(user: UserInput): User
+}
+```
+### Subscriptions
+
+```java
+@Service
+class MySubscription implements GraphQLSubscriptionResolver {
+
+    public Publisher<Integer> hello(DataFetchingEnvironment env) {
+        return Flux.range(0, 100)
+                .delayElements(Duration.ofSeconds(1))
+                .map(this::fun);
+    }
+    private Integer fun(Integer i) {
+        Integer result = i*10;
+        log.info("result={}", result);
+        return result;
+    }
+}
+```
+
+### Not Null & Deprecated
+```java
+@Service
+class MyQuery implements GraphQLQueryResolver {
+    @GraphQLDeprecated("Use hi instead")
+    public @NotNull String hello(@NotNull String name) {
+        return "hello " + name;
+    }
+}
+```
+
+### Interfaces
+```java
+@GraphQLInterface
+public class FilmCharacter {
+    private String name;
+}
+
+@GraphQLImplementation
+class Human extends FilmCharacter{
+    Float height;
+}
+
+@Service
+class MyQuery implements GraphQLQueryResolver {
+    public @NotNull List<@NotNull FilmCharacter> characters(@NotNull String name) {
+        return List.of(new Human());
+    }
+}
+
+```
+
+### Data Loaders

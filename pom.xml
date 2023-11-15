@@ -10,13 +10,14 @@
 	</parent>
 	<groupId>io.github.rapidgraphql</groupId>
 	<artifactId>rapid-graphql</artifactId>
-	<version>0.0.7-SNAPSHOT</version>
+	<version>0.0.8-SNAPSHOT</version>
 	<name>rapid-graphql</name>
 	<description>Demo graphql booster app</description>
 	<modules>
+        <module>annotations</module>
 		<module>starter</module>
 		<module>demoapp</module>
-	</modules>
+    </modules>
 	<packaging>pom</packaging>
 
 	<properties>

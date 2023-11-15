@@ -6,6 +6,8 @@ import org.rapidgraphql.starwars.model.FilmCharacter;
 import org.rapidgraphql.starwars.repository.FilmCharacterRepository;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 public class StarWarsQuery implements GraphQLQueryResolver {
     private final FilmCharacterRepository filmCharacterRepository;
@@ -18,8 +20,13 @@ public class StarWarsQuery implements GraphQLQueryResolver {
         return filmCharacterRepository.getCharacterById(filmCharacterRepository.getHeroId(episode));
     }
 
-    public FilmCharacter getHuman(Long id) {
+    public FilmCharacter getCharacter(Long id) {
         return  filmCharacterRepository.getCharacterById(id);
     }
+
+    public List<FilmCharacter> getCharacters() {
+        return  filmCharacterRepository.getAllCharacters();
+    }
+
 
 }

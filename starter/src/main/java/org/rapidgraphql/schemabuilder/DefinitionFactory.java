@@ -1,6 +1,5 @@
 package org.rapidgraphql.schemabuilder;
 
-import graphql.VisibleForTesting;
 import graphql.kickstart.tools.*;
 import graphql.language.Type;
 import graphql.language.*;
@@ -8,9 +7,12 @@ import graphql.scalars.ExtendedScalars;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLScalarType;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.jetbrains.annotations.NotNull;
 import org.rapidgraphql.annotations.GraphQLIgnore;
 import org.rapidgraphql.annotations.GraphQLInputType;
+import org.rapidgraphql.annotations.GraphQLInterface;
 import org.rapidgraphql.directives.SecuredDirectiveWiring;
+import org.rapidgraphql.exceptions.GraphQLSchemaGenerationException;
 import org.rapidgraphql.scalars.TimestampScalar;
 import org.slf4j.Logger;
 import org.springframework.util.ClassUtils;
@@ -31,6 +33,7 @@ import java.util.stream.Stream;
 import static java.lang.String.format;
 import static java.util.Map.entry;
 import static org.rapidgraphql.schemabuilder.MethodsFilter.*;
+import static org.rapidgraphql.schemabuilder.ResolverTypeExtractor.extractResolverType;
 import static org.rapidgraphql.schemabuilder.TypeUtils.*;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -70,22 +73,29 @@ public class DefinitionFactory {
             entry(OffsetDateTime.class, nullableType(ExtendedScalars.DateTime.getName())),
             entry(java.sql.Timestamp.class, nullableType(TimestampScalar.INSTANCE.getName()))
     );
-    private final Map<String, TypeKind> discoveredTypes = new HashMap<>();
+    private final Map<String, DiscoveredClass> discoveredTypes = new HashMap<>();
     private final Queue<DiscoveredClass> discoveredTypesQueue = new ArrayDeque<>();
     private final Set<String> definedClasses = new HashSet<>();
-    private final Map<TypeKind, Function<DiscoveredClass, Definition<?>>> definitionFactory = new HashMap<>();
+    private final Map<TypeKind, Function<DiscoveredClass, Stream<Definition<?>>>> definitionFactory = new HashMap<>();
     private static final Set<Class<?>> WRAPPER_CLASSES = Set.of(Optional.class, Future.class, CompletableFuture.class);
     private final DefaultValueAnnotationProcessor defaultValueAnnotationProcessor;
+    private final Map<String, Class<?>> implementationDictionary = new HashMap<>();
+    private Map<String, String> interfacesCreatedFromResolvers = new HashMap<>();
 
     public DefinitionFactory(DefaultValueAnnotationProcessor defaultValueAnnotationProcessor) {
         this.defaultValueAnnotationProcessor = defaultValueAnnotationProcessor;
-        definitionFactory.put(TypeKind.OUTPUT_TYPE, this::createTypeDefinition);
+        definitionFactory.put(TypeKind.OUTPUT_TYPE, this::createOutputTypeDefinition);
         definitionFactory.put(TypeKind.INPUT_TYPE, this::createInputTypeDefinition);
         definitionFactory.put(TypeKind.ENUM_TYPE, this::createEnumTypeDefinition);
+        definitionFactory.put(TypeKind.INTERFACE_TYPE, this::createInterfaceTypeDefinition);
     }
 
     public List<GraphQLScalarType> getScalars() {
         return scalars;
+    }
+
+    public Map<String, Class<?>> getImplementationDictionary() {
+        return implementationDictionary;
     }
 
     static private Type<?> nullableType(String typeName) {
@@ -96,13 +106,16 @@ public class DefinitionFactory {
         return new NonNullType(nullableType(typeName));
     }
 
-    public Definition<?> createTypeDefinition(GraphQLResolver<?> resolver) {
+    public Stream<Definition<?>> createTypeDefinition(GraphQLResolver<?> resolver) {
         boolean upperLevelResolver = resolver instanceof GraphQLQueryResolver || resolver instanceof GraphQLMutationResolver;
         boolean skipFirstParameter = !upperLevelResolver;
         String name;
         Class<?> sourceType = null;
         Class<?> resolverType = ClassUtils.getUserClass(resolver);
+        TypeKind typeKind = TypeKind.OUTPUT_TYPE;
+        String implementsInterface = null;
         boolean isSubscription = false;
+        Optional<DiscoveredClass> discoveredClass = Optional.empty();
         if (resolver instanceof GraphQLQueryResolver) {
             name = QUERY_TYPE;
         } else if(resolver instanceof GraphQLMutationResolver) {
@@ -111,13 +124,15 @@ public class DefinitionFactory {
             name = SUBSCRIPTION_TYPE;
             isSubscription = true;
         } else {
-            Optional<DiscoveredClass> discoveredClass = extractResolverType(resolver);
+            discoveredClass = extractResolverType(resolver);
             if (discoveredClass.isEmpty()) {
-                throw new IllegalStateException("Invalid resolver provided " + resolverType.getName());
+                throw new GraphQLSchemaGenerationException("Invalid resolver provided " + resolverType.getName());
             }
-            discoverType(discoveredClass.get(), TypeKind.OUTPUT_TYPE);
+            discoverType(discoveredClass.get(), typeKind);
             name = discoveredClass.get().getName();
             sourceType = discoveredClass.get().getClazz();
+            typeKind = discoveredClass.get().getTypeKind();
+            implementsInterface = discoveredClass.get().getImplementsInterface();
         }
         LOGGER.info("Processing {} resolver: {}", name, resolverType.getName());
 
@@ -128,7 +143,18 @@ public class DefinitionFactory {
         List<FieldDefinition> typeFields = Arrays.stream(resolverDeclaredMethods)
                 .map(method -> createFieldDefinition(method, skipFirstParameter))
                 .collect(Collectors.toList());
-        return createTypeDefinition(name, typeFields);
+        if (typeKind == TypeKind.OUTPUT_TYPE) {
+            return createTypeDefinition(name, typeFields, implementsInterface);
+        } else {
+            if (interfacesCreatedFromResolvers.containsKey(name)) {
+                throw new GraphQLSchemaGenerationException(
+                        String.format("Multimple resolvers are not allowed for interface: %s already has resolver %s, new resolver discovered %s",
+                                name, interfacesCreatedFromResolvers.get(name), resolverType.getName()));
+            }
+            interfacesCreatedFromResolvers.put(name, resolverType.getName());
+            discoveredClass.ifPresent(dClass -> typeFields.addAll(getFieldDefinitions(dClass)));
+            return createInterfaceTypeDefinition(name, sourceType, typeFields, false);
+        }
     }
 
     public List<Definition<?>> processTypesQueue() {
@@ -136,34 +162,105 @@ public class DefinitionFactory {
         while (!discoveredTypesQueue.isEmpty()) {
             DiscoveredClass discoveredClass = discoveredTypesQueue.remove();
             LOGGER.info("Begin processing {} {} as {}", discoveredClass.getTypeKind(), discoveredClass.getClazz().getName(), discoveredClass.getName());
-            definitions.add(definitionFactory.get(discoveredClass.getTypeKind()).apply(discoveredClass));
+            definitions.addAll(definitionFactory.get(discoveredClass.getTypeKind()).apply(discoveredClass).collect(Collectors.toList()));
             LOGGER.info("End processing {} {} as {}", discoveredClass.getTypeKind(), discoveredClass.getClazz().getName(), discoveredClass.getName());
         }
         return definitions;
     }
-    private Definition<?> createTypeDefinition(String name, List<FieldDefinition> typeFields) {
+    private Stream<Definition<?>> createTypeDefinition(String name, List<FieldDefinition> typeFields, String implementsInterface) {
+        Type implementsType = Optional.ofNullable(implementsInterface)
+                .map(interfaceName -> TypeName.newTypeName(interfaceName).build())
+                .orElse(null);
+        TypeName.newTypeName().name(implementsInterface).build();
         if (definedClasses.contains(name)) {
-            return ObjectTypeExtensionDefinition.newObjectTypeExtensionDefinition()
+            ObjectTypeExtensionDefinition.Builder builder = ObjectTypeExtensionDefinition.newObjectTypeExtensionDefinition()
                     .name(name)
-                    .fieldDefinitions(typeFields)
-                    .build();
+                    .fieldDefinitions(typeFields);
+            if (implementsType != null) {
+                builder = builder.implementz(implementsType);
+            }
+            return Stream.of(builder.build());
         } else {
             definedClasses.add(name);
-            return ObjectTypeDefinition.newObjectTypeDefinition()
+            ObjectTypeDefinition.Builder builder = ObjectTypeDefinition.newObjectTypeDefinition()
                     .name(name)
-                    .fieldDefinitions(typeFields)
-                    .build();
+                    .fieldDefinitions(typeFields);
+            if (implementsType != null) {
+                builder = builder.implementz(implementsType);
+            }
+            return Stream.of(builder.build());
         }
     }
 
-    public Definition<?> createTypeDefinition(DiscoveredClass discoveredClass) {
+    public Stream<Definition<?>> createOutputTypeDefinition(DiscoveredClass discoveredClass) {
+        List<FieldDefinition> typeFields = getFieldDefinitions(discoveredClass);
+        return createTypeDefinition(discoveredClass.getName(), typeFields, discoveredClass.getImplementsInterface());
+    }
+
+    public Stream<Definition<?>> createInterfaceTypeDefinition(DiscoveredClass discoveredClass) {
+        if (interfacesCreatedFromResolvers.containsKey(discoveredClass.getName())) {
+            // skip since Interface resolver creates full interface type including type fields
+            return Stream.empty();
+        }
+        List<FieldDefinition> typeFields = getFieldDefinitions(discoveredClass);
+        GraphQLInterface graphQLInterface = discoveredClass.getClazz().getAnnotation(GraphQLInterface.class);
+        if (graphQLInterface == null) {
+            throw new GraphQLSchemaGenerationException("interface should be marked with @GraphQLInterface annotation");
+        }
+        return createInterfaceTypeDefinition(discoveredClass.getName(), discoveredClass.getClazz(), typeFields, false);
+    }
+
+    private void discoverImplementations(DiscoveredClass discoveredInterfaceClass) {
+        if (discoveredInterfaceClass.getTypeKind() != TypeKind.INTERFACE_TYPE) {
+            return;
+        }
+        List<Class<?>> implementations = InterfaceUtils.findImplementations(discoveredInterfaceClass.getClazz());
+        implementations.stream()
+                .map(implementation -> DiscoveredClass.builder()
+                        .name(implementation.getSimpleName())
+                        .clazz(implementation)
+                        .typeKind(TypeKind.OUTPUT_TYPE)
+                        .implementsInterface(discoveredInterfaceClass.getName())
+                        .build())
+                .forEach(discovered -> {
+                    implementationDictionary.put(discovered.getName(), discovered.getClazz());
+                    discoverType(discovered, TypeKind.OUTPUT_TYPE);
+                });
+    }
+
+    @NotNull
+    private Stream<Definition<?>> createInterfaceTypeDefinition(String name, Class<?> clazz,
+                                                                  List<FieldDefinition> typeFields,
+                                                                  boolean createImplementations) {
+        Stream<Definition<?>> definitionsStream = Stream.of();
+        if (definedClasses.contains(name)) {
+            throw new GraphQLSchemaGenerationException("Extending of interface " + name + " is not supported");
+        } else {
+            definedClasses.add(name);
+            definitionsStream = Stream.of(InterfaceTypeDefinition.newInterfaceTypeDefinition()
+                    .name(name)
+                    .definitions(typeFields)
+                    .build());
+        }
+        if (createImplementations) {
+            List<Class<?>> implementations = InterfaceUtils.findImplementations(clazz);
+            definitionsStream = Stream.concat(definitionsStream,
+                    implementations.stream()
+                            .flatMap(implementation -> createTypeDefinition(implementation.getSimpleName(), typeFields, name))
+            );
+        }
+        return definitionsStream;
+    }
+
+    @NotNull
+    private List<FieldDefinition> getFieldDefinitions(DiscoveredClass discoveredClass) {
         Method[] declaredMethods = getTypeMethods(discoveredClass);
         Set<String> ignoredFields = getOutputTypeIgnoredFields(discoveredClass);
         List<FieldDefinition> typeFields = Arrays.stream(declaredMethods)
                 .map(method -> createFieldDefinition(method, false))
                 .filter(fieldDefinition -> !ignoredFields.contains(fieldDefinition.getName()))
                 .collect(Collectors.toList());
-        return createTypeDefinition(discoveredClass.getName(), typeFields);
+        return typeFields;
     }
 
     private Set<String> getOutputTypeIgnoredFields(DiscoveredClass discoveredClass) {
@@ -174,7 +271,7 @@ public class DefinitionFactory {
         return fieldsToIgnore;
     }
 
-    private Definition<?> createInputTypeDefinition(DiscoveredClass discoveredClass) {
+    private Stream<Definition<?>> createInputTypeDefinition(DiscoveredClass discoveredClass) {
         InputObjectTypeDefinition.Builder definitionBuilder = InputObjectTypeDefinition.newInputObjectDefinition();
         definitionBuilder.name(discoveredClass.getName());
         Method[] declaredMethods = getInputTypeMethods(discoveredClass);
@@ -187,7 +284,7 @@ public class DefinitionFactory {
                 .map(this::createInputValueDefinition)
                 .collect(Collectors.toList());
         definitionBuilder.inputValueDefinitions(inputDefinitions);
-        return definitionBuilder.build();
+        return Stream.of(definitionBuilder.build());
     }
 
     private Set<String> getInputTypeIgnoredFields(DiscoveredClass discoveredClass) {
@@ -205,43 +302,19 @@ public class DefinitionFactory {
                 .build();
     }
 
-    private Definition<?> createEnumTypeDefinition(DiscoveredClass discoveredClass) {
+    private Stream<Definition<?>> createEnumTypeDefinition(DiscoveredClass discoveredClass) {
         List<EnumValueDefinition> enumValueDefinitions = getEnumValueDefinitions(discoveredClass.getClazz());
         EnumTypeDefinition definition = EnumTypeDefinition.newEnumTypeDefinition()
                 .name(discoveredClass.getName())
                 .enumValueDefinitions(enumValueDefinitions)
                 .build();
-        return definition;
+        return Stream.of(definition);
     }
 
     private List<EnumValueDefinition> getEnumValueDefinitions(Class<?> clazz) {
         return Arrays.stream(clazz.getEnumConstants()).map(Object::toString)
                 .map(name -> EnumValueDefinition.newEnumValueDefinition().name(name).build())
                 .collect(Collectors.toList());
-    }
-
-    @VisibleForTesting
-    public Optional<DiscoveredClass> extractResolverType(GraphQLResolver<?> graphQLResolver) {
-        return extractResolverTypeFromClass(
-                ClassUtils.getUserClass(graphQLResolver.getClass()));
-    }
-
-    private Optional<DiscoveredClass> extractResolverTypeFromClass(Class<?> resolverClass) {
-        Optional<AnnotatedType> resolverInterface = Arrays.stream(resolverClass.getAnnotatedInterfaces())
-                .filter(annotatedType -> (annotatedType.getType() instanceof ParameterizedType) &&
-                        ((ParameterizedType)annotatedType.getType()).getRawType().equals(GraphQLResolver.class))
-                .findFirst();
-        if (resolverInterface.isEmpty()) {
-            Class<?> superclass = resolverClass.getSuperclass();
-            return Optional.ofNullable(superclass).flatMap(this::extractResolverTypeFromClass);
-        }
-        AnnotatedParameterizedType annotatedParameterizedType = (AnnotatedParameterizedType) resolverInterface.get();
-        Class<?> clazz = (Class<?>) annotatedParameterizedType.getAnnotatedActualTypeArguments()[0].getType();
-        return Optional.of(DiscoveredClass.builder()
-                .name(getTypeName(clazz, TypeKind.OUTPUT_TYPE))
-                .clazz(clazz)
-                .typeKind(TypeKind.OUTPUT_TYPE)
-                .build());
     }
 
     @NonNull
@@ -256,27 +329,38 @@ public class DefinitionFactory {
     }
 
     private void discoverType(DiscoveredClass discoveredClass, TypeKind typeKind) {
-        if (discoveredClass.getClazz().isInterface()) {
-            if (typeKind == TypeKind.INPUT_TYPE) {
-                throw new SchemaError("Input type can't be interface: " + discoveredClass.getClazz().getName(), null);
-            } else {
-                throw new SchemaError("Interfaces are not yet supported: " + discoveredClass.getClazz().getName(), null);
-            }
+        if (discoveredClass.getClazz().isInterface() && typeKind==TypeKind.INPUT_TYPE) {
+            throw new GraphQLSchemaGenerationException("Input type can't be interface: " + discoveredClass.getClazz().getName());
         } else if (discoveredClass.getClazz().isEnum()) {
             discoveredClass.setTypeKind(TypeKind.ENUM_TYPE);
+        } else if (typeKind==TypeKind.INTERFACE_TYPE || discoveredClass.getClazz().isAnnotationPresent(GraphQLInterface.class)) {
+            discoveredClass.setTypeKind(TypeKind.INTERFACE_TYPE);
         } else {
             discoveredClass.setTypeKind(typeKind);
         }
-        TypeKind existingTypeKind = discoveredTypes.get(discoveredClass.getName());
-        if (existingTypeKind == null) {
+        DiscoveredClass alreadyDiscovered = discoveredTypes.get(discoveredClass.getName());
+        if (alreadyDiscovered == null) {
             LOGGER.info("Discovered new type {} of kind {}", discoveredClass.getName(), discoveredClass.getTypeKind());
-            discoveredTypes.put(discoveredClass.getName(), discoveredClass.getTypeKind());
+            discoveredTypes.put(discoveredClass.getName(), discoveredClass);
+            discoverInterface(discoveredClass);
             discoveredTypesQueue.add(discoveredClass);
-        } else if (existingTypeKind != discoveredClass.getTypeKind()) {
-            throw new SchemaError(format("Type %s was already discovered with different type kind %s (previous) != %s (new)",
-                    discoveredClass.getName(), existingTypeKind, discoveredClass.getTypeKind()), null);
+            discoverImplementations(discoveredClass);
+        } else if (alreadyDiscovered.getTypeKind() != discoveredClass.getTypeKind()) {
+            throw new GraphQLSchemaGenerationException(format("Type %s was already discovered with different type kind %s (previous) != %s (new)",
+                    discoveredClass.getName(), alreadyDiscovered.getTypeKind(), discoveredClass.getTypeKind()));
+        } else {
+            discoveredClass.setImplementsInterface(alreadyDiscovered.getImplementsInterface());
         }
+    }
 
+    private void discoverInterface(DiscoveredClass discoveredClass) {
+        Optional<Class<?>> interfaceType = InterfaceUtils.getGraphQLInterface(discoveredClass.getClazz());
+        discoveredClass.setImplementsInterface(interfaceType.map(Class::getSimpleName).orElse(null));
+        interfaceType.map(type->DiscoveredClass.builder()
+                            .name(type.getSimpleName())
+                            .clazz(type)
+                            .build())
+                        .ifPresent(discovered -> discoverType(discovered, TypeKind.INTERFACE_TYPE));
     }
 
     private FieldDefinition createFieldDefinition(Method method, boolean skipFirst) {

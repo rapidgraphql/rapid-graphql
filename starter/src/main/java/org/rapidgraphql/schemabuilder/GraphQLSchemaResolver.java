@@ -30,6 +30,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.slf4j.LoggerFactory.getLogger;
@@ -48,15 +49,17 @@ public class GraphQLSchemaResolver {
 
     class MyTypeDefinitionFactory implements TypeDefinitionFactory {
         private final List<? extends GraphQLResolver<?>> resolvers;
+        private final List<Definition<?>> definitions;
 
-        MyTypeDefinitionFactory(List<? extends GraphQLResolver<?>> resolvers) {
+        MyTypeDefinitionFactory(List<? extends GraphQLResolver<?>> resolvers, List<Definition<?>> definitions) {
             this.resolvers = resolvers;
+            this.definitions = definitions;
         }
 
         @NonNull
         @Override
         public List<Definition<?>> create(final List<Definition<?>> existing) {
-            return processResolvers(resolvers);
+            return definitions;
         }
     }
     private List<Definition<?>> processResolvers(List<? extends GraphQLResolver<?>> resolvers) {
@@ -66,7 +69,7 @@ public class GraphQLSchemaResolver {
                 .map(scalar -> ScalarTypeDefinition.newScalarTypeDefinition().name(scalar.getName()).build())
                 .collect(Collectors.toList()));
         definitions.addAll(resolvers.stream()
-                .map(definitionFactory::createTypeDefinition)
+                .flatMap(definitionFactory::createTypeDefinition)
                 .collect(Collectors.toList()));
         definitions.addAll(definitionFactory.processTypesQueue());
         return definitions;
@@ -103,8 +106,9 @@ public class GraphQLSchemaResolver {
             return schemaParser;
         }
         LOGGER.info("{} resolvers and {} directives found", resolvers.size(), directives.size());
+        List<Definition<?>> definitions = processResolvers(resolvers);
         SchemaParserOptions options = SchemaParserOptions.newOptions()
-                .typeDefinitionFactory(new MyTypeDefinitionFactory(resolvers))
+                .typeDefinitionFactory(new MyTypeDefinitionFactory(resolvers, definitions))
                 .objectMapperProvider(perFieldObjectMapperProvider)
                 .build();
         SchemaParserBuilder schemaParserBuilder = SchemaParser.newParser()
@@ -112,6 +116,7 @@ public class GraphQLSchemaResolver {
                 .options(options)
                 .scalars(definitionFactory.getScalars());
         addDirectives(schemaParserBuilder, directives);
+        addDictionary(schemaParserBuilder, definitionFactory.getImplementationDictionary());
         schemaParser = schemaParserBuilder.build();
         return schemaParser;
     }
@@ -125,5 +130,12 @@ public class GraphQLSchemaResolver {
         for (GraphQLDirectiveWiring directiveWiring: directives) {
             schemaParserBuilder.directive(directiveWiring.getName(), directiveWiring);
         }
+    }
+
+    private void addDictionary(SchemaParserBuilder schemaParserBuilder, Map<String, Class<?>> implementationDictionary) {
+        implementationDictionary.forEach((name, clazz) -> {
+            LOGGER.info("Adding {} -> {} to dictionary", name, clazz.getCanonicalName());
+            schemaParserBuilder.dictionary(name, clazz);
+        });
     }
 }
