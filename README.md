@@ -52,9 +52,8 @@ In ``pom.xml`` you should add following dependencies:
         <dependency>
             <groupId>io.github.rapidgraphql</groupId>
             <artifactId>rapid-graphql-starter</artifactId>
-            <version>0.0.8-SNAPSHOT</version>
+            <version>0.0.8</version>
         </dependency>
-
         <dependency> <!-- Recommended -->
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
