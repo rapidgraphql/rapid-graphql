@@ -8,7 +8,7 @@ Code generation is used by some frameworks to simplify this synchronization, but
 
 ## Fast start guide
 
-Rapid GraphQL framework is based on the spring boot framework and makes use of graphql-spring-boot-starter (this may change in future).
+Rapid GraphQL framework is based on the spring boot framework and GraphQL Java Kickstart (https://www.graphql-java-kickstart.com/)
 It doesn't require graphql schema files, and it automatically creates graphql endpoint (and graphiql if needed)
 
 ### Hello World
@@ -38,6 +38,8 @@ public class HelloWorldQuery implements GraphQLQueryResolver {
 To have graphiql running please add following configuration to the ``application.properties`` file
 ```properties
 graphql.graphiql.enabled=true
+# to enable exception mapping add
+graphql.servlet.exception-handlers-enabled=true
 ```
 
 In ``pom.xml`` you should add following dependencies:
@@ -52,7 +54,7 @@ In ``pom.xml`` you should add following dependencies:
         <dependency>
             <groupId>io.github.rapidgraphql</groupId>
             <artifactId>rapid-graphql-starter</artifactId>
-            <version>0.0.8</version>
+            <version>0.1.0</version>
         </dependency>
         <dependency> <!-- Recommended -->
             <groupId>org.projectlombok</groupId>
@@ -188,3 +190,31 @@ class MyQuery implements GraphQLQueryResolver {
 ```
 
 ### Data Loaders
+
+## Rapid GraphQL client
+Version 0.1.0 contains Feign inspired implementation of GraphQL client, which cal be as simple as:
+```java
+	interface TestApi {
+		@GraphQLQuery
+		Integer intValue(Integer val);
+		@GraphQLQuery
+		Long longValue(Long val);
+		@GraphQLQuery
+		String longValue(String val);
+		@GraphQLQuery
+		List<String> stringList(List<String> val);
+		@GraphQLQuery
+		String throwException(String message);
+	}
+
+    TestApi testApi = RapidGraphQLClient.builder()
+            .target(TestApi.class, "http://localhost:" + randomServerPort + "/graphql");
+```
+Don't forget to add maven dependency:
+```xml
+        <dependency>
+            <groupId>io.github.rapidgraphql</groupId>
+            <artifactId>rapid-graphql-starter</artifactId>
+            <version>0.1.0</version>
+        </dependency>
+```

@@ -6,6 +6,7 @@ import org.rapidgraphql.annotations.GraphQLIgnore;
 import org.rapidgraphql.directives.GraphQLDataLoader;
 import org.slf4j.Logger;
 import org.springframework.util.ReflectionUtils;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -140,6 +141,9 @@ public class MethodsFilter {
             return true;
         }
         if (method.isAnnotationPresent(DataLoaderMethod.class)) {
+            return true;
+        }
+        if (method.isAnnotationPresent(ExceptionHandler.class)) {
             return true;
         }
         return false;
