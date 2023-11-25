@@ -14,6 +14,9 @@ import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static java.util.Map.entry;
@@ -53,18 +56,56 @@ public class GraphQLRequestBuilder {
     }
 
     private static GraphQLRequestBody initializeRequest(String queryType, String query, Method method) {
+        GraphQLRequestBody graphQLRequestBody = GraphQLRequestBody.builder()
+                .fieldName(method.getName())
+                .build();
         StringBuilder queryBuilder = new StringBuilder(queryType);
         queryBuilder.append(' ');
         queryBuilder.append(method.getName());
         addVariablesDeclaration(queryBuilder, method);
         queryBuilder.append('{');
+        if (!(tryDefaultQueryOfSimpleType(query, method, queryBuilder) ||
+              tryQueryOfObjectType(query, method, queryBuilder) ||
+              tryCustomQuery(query, method, queryBuilder, graphQLRequestBody))) {
+            throw new RapidGraphQLQueryBuilderException("Invalid query spacified in annotation");
+        }
+        queryBuilder.append('}');
+        graphQLRequestBody.setQuery(queryBuilder.toString());
+        return graphQLRequestBody;
+    }
+
+    private static final Pattern DEFAULT_QUERY = Pattern.compile("^\\s*\\{\\s*}\\s*$");
+    private static final Predicate<String> defaultQueryPredicate = DEFAULT_QUERY.asMatchPredicate();
+    private static boolean tryDefaultQueryOfSimpleType(String query, Method method, StringBuilder queryBuilder) {
+        if (!defaultQueryPredicate.test(query)) {
+            return false;
+        }
         queryBuilder.append(method.getName());
         addVariablesReference(queryBuilder, method);
-        queryBuilder.append('}');
-        return GraphQLRequestBody.builder()
-                .query(queryBuilder.toString())
-                .fieldName(method.getName())
-                .build();
+        return true;
+    }
+
+    private static final Pattern OBJECT_TYPE_QUERY = Pattern.compile("^\\s*\\{\\s*(\\{.*})\\s*}\\s*$");
+    private static boolean tryQueryOfObjectType(String query, Method method, StringBuilder queryBuilder) {
+        Matcher matcher = OBJECT_TYPE_QUERY.matcher(query);
+        if (!matcher.matches()) {
+            return false;
+        }
+        queryBuilder.append(method.getName());
+        addVariablesReference(queryBuilder, method);
+        queryBuilder.append(matcher.group(1));
+        return true;
+    }
+
+    private static final Pattern CUSTOM_QUERY = Pattern.compile("^\\s*\\{\\s*(([a-zA-Z_]\\w*).*)\\s*}\\s*$");
+    private static boolean tryCustomQuery(String query, Method method, StringBuilder queryBuilder, GraphQLRequestBody graphQLRequestBody) {
+        Matcher matcher = CUSTOM_QUERY.matcher(query);
+        if (!matcher.matches()) {
+            return false;
+        }
+        queryBuilder.append(matcher.group(1));
+        graphQLRequestBody.setFieldName(matcher.group(2));
+        return true;
     }
 
     private static void addVariablesDeclaration(StringBuilder queryBuilder, Method method) {
