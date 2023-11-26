@@ -1,8 +1,6 @@
 package org.rapidgraphql.client;
 
-import kong.unirest.core.HttpResponse;
-import kong.unirest.core.JsonNode;
-import kong.unirest.core.Unirest;
+import kong.unirest.core.*;
 import lombok.Builder;
 import org.rapidgraphql.client.exceptions.GraphQLHttpErrorException;
 import org.rapidgraphql.client.extractor.ResultExtractor;
@@ -10,9 +8,14 @@ import org.rapidgraphql.client.extractor.ResultExtractor;
 @Builder
 public class GraphQLHttpClient {
     private final String url;
+    private final Config requestConfig;
     public Object exchange(GraphQLRequestBody graphQLRequestBody, ResultExtractor extractor) {
-        HttpResponse<JsonNode> jsonNodeHttpResponse = Unirest.post(url)
-                .header("accept", "application/json")
+        HttpRequestWithBody requestWithBody = Unirest.post(url)
+                .accept("application/json");
+        if (requestConfig != null) {
+            requestWithBody = requestWithBody.connectTimeout(requestConfig.getConnectionTimeout());
+        }
+        HttpResponse<JsonNode> jsonNodeHttpResponse = requestWithBody
                 .body(graphQLRequestBody)
                 .asJson();
         if (!jsonNodeHttpResponse.isSuccess()) {

@@ -3,6 +3,7 @@ package org.rapidgraphql.app;
 import org.junit.jupiter.api.Test;
 import org.rapidgraphql.client.RapidGraphQLClient;
 import org.rapidgraphql.client.annotations.GraphQL;
+import org.rapidgraphql.client.annotations.GraphQLMutation;
 import org.rapidgraphql.client.annotations.GraphQLQuery;
 import org.rapidgraphql.client.exceptions.GraphQLErrorException;
 import org.rapidgraphql.helloworld.Chat;
@@ -57,6 +58,8 @@ class RapidGraphQLApplicationTests {
 		List<String> stringList(List<String> val);
 		@GraphQLQuery
 		String throwException(String message);
+		@GraphQLMutation("{{youSaid, iSay}}")
+		Chat message(String message);
 	}
 	@Test
 	public void clientTestWithGraphQLQueryAnnotation() {
@@ -67,5 +70,12 @@ class RapidGraphQLApplicationTests {
 		assertThat(testApi.stringList(List.of("hello", "world"))).containsExactly("hello", "world");
 		GraphQLErrorException error = assertThrows(GraphQLErrorException.class, () -> testApi.throwException("error"));
 		assertThat(error.getMessage()).isEqualTo("error");
+	}
+
+	@Test
+	public void clientTestWithGraphQLMutationAnnotation() {
+		TestApi testApi = RapidGraphQLClient.builder()
+				.target(TestApi.class, "http://localhost:" + randomServerPort + "/graphql");
+		assertThat(testApi.message("hi")).isEqualTo(Chat.builder().iSay("ih").youSaid("hi").build());
 	}
 }

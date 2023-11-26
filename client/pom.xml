@@ -5,12 +5,12 @@
     <parent>
         <artifactId>rapid-graphql</artifactId>
         <groupId>io.github.rapidgraphql</groupId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>0.1.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>rapid-graphql-client</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
     <packaging>jar</packaging>
 
     <properties>
