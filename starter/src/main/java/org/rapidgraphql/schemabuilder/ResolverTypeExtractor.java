@@ -1,17 +1,19 @@
 package org.rapidgraphql.schemabuilder;
 
-import graphql.VisibleForTesting;
 import graphql.kickstart.tools.GraphQLResolver;
 import org.rapidgraphql.exceptions.GraphQLSchemaGenerationException;
 import org.slf4j.Logger;
 import org.springframework.util.ClassUtils;
 
-import java.lang.reflect.*;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.rapidgraphql.schemabuilder.TypeUtils.getTypeName;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class ResolverTypeExtractor {
@@ -33,7 +35,7 @@ public class ResolverTypeExtractor {
             if (resolvedType.get() instanceof Class) {
                 Class<?> clazz = (Class<?>)resolvedType.get();
                 return Optional.of(DiscoveredClass.builder()
-                        .name(getTypeName(clazz))
+                        .name(getTypeName(clazz, TypeKind.OUTPUT_TYPE))
                         .clazz(clazz)
                         .typeKind(TypeKind.OUTPUT_TYPE)
                         .build());
@@ -70,7 +72,7 @@ public class ResolverTypeExtractor {
                 TypeVariable<?> typeVariable = (TypeVariable<?>)resolvedType.get();
                 Class<?> clazz = parametersMap.get(typeVariable.getName());
                 return Optional.of(DiscoveredClass.builder()
-                        .name(getTypeName(clazz))
+                        .name(getTypeName(clazz, TypeKind.OUTPUT_TYPE))
                         .clazz(clazz)
                         .typeKind(TypeKind.OUTPUT_TYPE)
                         .build());
@@ -101,10 +103,6 @@ public class ResolverTypeExtractor {
         }
 
         return parametersMap;
-    }
-
-    private static String getTypeName(Class<?> clazz) {
-        return clazz.getSimpleName();
     }
 
 }

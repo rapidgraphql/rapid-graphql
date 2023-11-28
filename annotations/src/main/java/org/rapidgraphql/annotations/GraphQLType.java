@@ -5,8 +5,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * Allows to specify alternative name for graphql type
+ */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE, ElementType.TYPE_USE})
-public @interface GraphQLInterface {
-    String value() default "";
+@Target({ElementType.TYPE})
+public @interface GraphQLType {
+    String value();
 }

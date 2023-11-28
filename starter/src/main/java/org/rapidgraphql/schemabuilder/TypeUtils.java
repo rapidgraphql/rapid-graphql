@@ -2,7 +2,12 @@ package org.rapidgraphql.schemabuilder;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.StringUtils;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.rapidgraphql.annotations.GraphQLImplementation;
+import org.rapidgraphql.annotations.GraphQLInputType;
+import org.rapidgraphql.annotations.GraphQLInterface;
+import org.rapidgraphql.annotations.GraphQLType;
 import org.rapidgraphql.exceptions.GraphQLSchemaGenerationException;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
@@ -153,4 +158,33 @@ public class TypeUtils {
         return ValueType.OBJECT_VALUE;
 
     }
+
+    @NonNull
+    public static String getTypeName(Class<?> clazz, TypeKind typeKind) {
+        Optional<String> typeNameOptional;
+        switch (typeKind ) {
+            case INPUT_TYPE:
+                typeNameOptional = Optional.ofNullable(clazz.getAnnotation(GraphQLInputType.class))
+                        .map(GraphQLInputType::value)
+                        .filter(StringUtils::isNotEmpty);
+                break;
+            case INTERFACE_TYPE:
+                typeNameOptional = Optional.ofNullable(clazz.getAnnotation(GraphQLInterface.class))
+                        .map(GraphQLInterface::value)
+                        .filter(StringUtils::isNotEmpty);
+                break;
+            default:
+                typeNameOptional = Optional.ofNullable(clazz.getAnnotation(GraphQLType.class))
+                        .map(GraphQLType::value)
+                        .filter(StringUtils::isNotEmpty);
+                typeNameOptional = typeNameOptional.or(
+                        () -> Optional.ofNullable(clazz.getAnnotation(GraphQLImplementation.class))
+                        .map(GraphQLImplementation::value)
+                        .filter(StringUtils::isNotEmpty));
+
+        }
+
+        return typeNameOptional.orElse(clazz.getSimpleName());
+    }
+
 }

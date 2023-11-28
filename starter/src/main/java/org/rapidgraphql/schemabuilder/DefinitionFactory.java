@@ -257,8 +257,8 @@ public class DefinitionFactory {
         Method[] declaredMethods = getTypeMethods(discoveredClass);
         Set<String> ignoredFields = getOutputTypeIgnoredFields(discoveredClass);
         List<FieldDefinition> typeFields = Arrays.stream(declaredMethods)
+                .filter(method -> !ignoredFields.contains(normalizeGetName(method.getName())))
                 .map(method -> createFieldDefinition(method, false))
-                .filter(fieldDefinition -> !ignoredFields.contains(fieldDefinition.getName()))
                 .collect(Collectors.toList());
         return typeFields;
     }
@@ -315,17 +315,6 @@ public class DefinitionFactory {
         return Arrays.stream(clazz.getEnumConstants()).map(Object::toString)
                 .map(name -> EnumValueDefinition.newEnumValueDefinition().name(name).build())
                 .collect(Collectors.toList());
-    }
-
-    @NonNull
-    private String getTypeName(Class<?> clazz, TypeKind typeKind) {
-        if (typeKind == TypeKind.INPUT_TYPE) {
-            GraphQLInputType annotation = clazz.getAnnotation(GraphQLInputType.class);
-            if (annotation != null) {
-                return annotation.value();
-            }
-        }
-        return clazz.getSimpleName();
     }
 
     private void discoverType(DiscoveredClass discoveredClass, TypeKind typeKind) {

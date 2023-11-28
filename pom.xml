@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>io.github.rapidgraphql</groupId>
 	<artifactId>rapid-graphql</artifactId>
-	<version>0.1.0</version>
+	<version>0.1.1</version>
 	<name>rapid-graphql</name>
 	<description>Demo graphql booster app</description>
 	<modules>
