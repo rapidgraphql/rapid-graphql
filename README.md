@@ -217,11 +217,11 @@ interface TestApi {
 TestApi testApi = RapidGraphQLClient.builder()
         .target(TestApi.class, "http://localhost:" + randomServerPort + "/graphql");
 ```
-Don't forget to add maven dependency:
+Following mvn dependency should be added:
 ```xml
         <dependency>
             <groupId>io.github.rapidgraphql</groupId>
-            <artifactId>rapid-graphql-starter</artifactId>
-            <version>0.1.0</version>
+            <artifactId>rapid-graphql-client</artifactId>
+            <version>1.0.0</version>
         </dependency>
 ```
