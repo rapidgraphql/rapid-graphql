@@ -4,8 +4,10 @@ import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 import org.junit.jupiter.api.Test;
+import org.rapidgraphql.client.annotations.Bearer;
 import org.rapidgraphql.client.annotations.GraphQLMutation;
 import org.rapidgraphql.client.annotations.GraphQLQuery;
+import org.rapidgraphql.client.annotations.HttpHeader;
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -28,6 +30,8 @@ class GraphQLRequestBuilderTest {
         List<MyType> generateTypeList(Integer elements);
         @GraphQLMutation("{generateTypeList(elements: 10){a, b}}")
         List<MyType> generateListOf10();
+        @GraphQLQuery
+        List<Integer> queryWithHeaders(Integer iVal, @Bearer String token, @HttpHeader String xRequestId, String sVal);
     }
     @Test
     public void defaultQuery() throws NoSuchMethodException {
@@ -62,5 +66,23 @@ class GraphQLRequestBuilderTest {
                 .extracting(GraphQLRequestBody::getFieldName, GraphQLRequestBody::getQuery, GraphQLRequestBody::getVariables)
                 .containsExactly("generateTypeList", "mutation generateListOf10{generateTypeList(elements: 10){a, b}}",
                         Map.of());
+    }
+
+    @Test
+    public void queryWithHeaders() throws NoSuchMethodException {
+        Method method = TestApi.class.getMethod("queryWithHeaders", Integer.class, String.class, String.class, String.class);
+        Integer iVal = 10;
+        String token = "token";
+        String requestId = "request1234";
+        String sVal = "string";
+        GraphQLRequestBody graphQLRequestBody = GraphQLRequestBuilder.build(method, new Object[]{iVal, token, requestId, sVal});
+        assertThat(graphQLRequestBody)
+                .isNotNull()
+                .extracting(GraphQLRequestBody::getFieldName, GraphQLRequestBody::getQuery, GraphQLRequestBody::getVariables, GraphQLRequestBody::getHeaders)
+                .containsExactly("queryWithHeaders",
+                        "query queryWithHeaders($iVal: Int, $sVal: String){queryWithHeaders(iVal: $iVal, sVal: $sVal)}",
+                        Map.of("iVal", iVal, "sVal", sVal),
+                        Map.of("X-Request-Id", requestId, "Authorization", "Bearer " + token)
+                );
     }
 }

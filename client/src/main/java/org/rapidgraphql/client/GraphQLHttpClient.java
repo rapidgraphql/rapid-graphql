@@ -17,6 +17,7 @@ public class GraphQLHttpClient {
         }
         HttpResponse<JsonNode> jsonNodeHttpResponse = requestWithBody
                 .body(graphQLRequestBody)
+                .headers(graphQLRequestBody.getHeaders())
                 .asJson();
         if (!jsonNodeHttpResponse.isSuccess()) {
             throw new GraphQLHttpErrorException(jsonNodeHttpResponse);

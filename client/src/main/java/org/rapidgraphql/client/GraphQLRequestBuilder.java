@@ -1,8 +1,6 @@
 package org.rapidgraphql.client;
 
-import org.rapidgraphql.client.annotations.GraphQL;
-import org.rapidgraphql.client.annotations.GraphQLMutation;
-import org.rapidgraphql.client.annotations.GraphQLQuery;
+import org.rapidgraphql.client.annotations.*;
 import org.rapidgraphql.client.exceptions.RapidGraphQLQueryBuilderException;
 
 import java.lang.reflect.Method;
@@ -24,7 +22,7 @@ import static java.util.Map.entry;
 public class GraphQLRequestBuilder {
     public static GraphQLRequestBody build(Method method, Object[] args) {
         GraphQLRequestBody request = initializeRequest(method);
-        request.setVariables(buildVariables(method, args));
+        processMethodArguments(request, method, args);
         return request;
     }
 
@@ -114,6 +112,7 @@ public class GraphQLRequestBuilder {
         }
         queryBuilder.append('(');
         queryBuilder.append(Arrays.stream(method.getParameters())
+                .filter(GraphQLRequestBuilder::filterQueryParameters)
                 .map(p -> String.format("$%s: %s", p.getName(), declareType(p.getParameterizedType())))
                 .collect(Collectors.joining(", ")));
 
@@ -126,10 +125,15 @@ public class GraphQLRequestBuilder {
         }
         queryBuilder.append('(');
         queryBuilder.append(Arrays.stream(method.getParameters())
+                .filter(GraphQLRequestBuilder::filterQueryParameters)
                 .map(p -> String.format("%s: $%s", p.getName(), p.getName()))
                 .collect(Collectors.joining(", ")));
 
         queryBuilder.append(')');
+    }
+
+    private static boolean filterQueryParameters(Parameter parameter) {
+        return !parameter.isAnnotationPresent(HttpHeader.class) && !parameter.isAnnotationPresent(Bearer.class);
     }
 
     private static final Map<Type, String> graphQLTypeNames = Map.ofEntries(
@@ -170,13 +174,24 @@ public class GraphQLRequestBuilder {
         return GraphQLRequestBody.builder().query(graphQL.query()).fieldName(fieldName).build();
     }
 
-    private static Map<String, Object> buildVariables(Method method, Object[] args) {
+    private static void processMethodArguments(GraphQLRequestBody requestBody, Method method, Object[] args) {
         Map<String, Object> graphQLVariables = new HashMap<>();
         Parameter[] parameters = method.getParameters();
         for (int i=0; i<parameters.length; i++) {
-            graphQLVariables.put(parameters[i].getName(), args[i]);
+            Parameter parameter = parameters[i];
+            HttpHeader httpHeaderAnnotation;
+            if ((httpHeaderAnnotation = parameter.getAnnotation(HttpHeader.class)) != null) {
+                if (httpHeaderAnnotation.value().isEmpty()) {
+                    requestBody.headerByParameterName(parameter.getName(), args[i]);
+                } else {
+                    requestBody.header(httpHeaderAnnotation.value(), args[i]);
+                }
+            } else if (parameter.isAnnotationPresent(Bearer.class)) {
+                requestBody.bearer(args[i]);
+            } else {
+                requestBody.variable(parameter.getName(), args[i]);
+            }
         }
-        return graphQLVariables;
     }
 
 

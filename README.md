@@ -54,7 +54,7 @@ In ``pom.xml`` you should add following dependencies:
         <dependency>
             <groupId>io.github.rapidgraphql</groupId>
             <artifactId>rapid-graphql-starter</artifactId>
-            <version>0.1.0</version>
+            <version>1.0.0</version>
         </dependency>
         <dependency> <!-- Recommended -->
             <groupId>org.projectlombok</groupId>
@@ -205,6 +205,13 @@ Version 0.1.0 contains Feign inspired implementation of GraphQL client, which ca
 		List<String> stringList(List<String> val);
 		@GraphQLQuery
 		String throwException(String message);
+        @Data
+        class MyData {
+            Integer a;
+            Integer b;
+        }
+        @GraphQLMutation("{{a b}}")
+        MyData createData(Integer a, Integer b, @HttpHeader String xRequestId, @Bearer String token);
 	}
 
     TestApi testApi = RapidGraphQLClient.builder()
