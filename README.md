@@ -194,28 +194,28 @@ class MyQuery implements GraphQLQueryResolver {
 ## Rapid GraphQL client
 Version 0.1.0 contains Feign inspired implementation of GraphQL client, which cal be as simple as:
 ```java
-	interface TestApi {
-		@GraphQLQuery
-		Integer intValue(Integer val);
-		@GraphQLQuery
-		Long longValue(Long val);
-		@GraphQLQuery
-		String longValue(String val);
-		@GraphQLQuery
-		List<String> stringList(List<String> val);
-		@GraphQLQuery
-		String throwException(String message);
-        @Data
-        class MyData {
-            Integer a;
-            Integer b;
-        }
-        @GraphQLMutation("{{a b}}")
-        MyData createData(Integer a, Integer b, @HttpHeader String xRequestId, @Bearer String token);
-	}
+interface TestApi {
+    @GraphQLQuery
+    Integer intValue(Integer val);
+    @GraphQLQuery
+    Long longValue(Long val);
+    @GraphQLQuery
+    String longValue(String val);
+    @GraphQLQuery
+    List<String> stringList(List<String> val);
+    @GraphQLQuery
+    String throwException(String message);
+    @Data
+    class MyData {
+        Integer a;
+        Integer b;
+    }
+    @GraphQLMutation("{{a b}}")
+    MyData createData(Integer a, Integer b, @HttpHeader String xRequestId, @Bearer String token);
+}
 
-    TestApi testApi = RapidGraphQLClient.builder()
-            .target(TestApi.class, "http://localhost:" + randomServerPort + "/graphql");
+TestApi testApi = RapidGraphQLClient.builder()
+        .target(TestApi.class, "http://localhost:" + randomServerPort + "/graphql");
 ```
 Don't forget to add maven dependency:
 ```xml
