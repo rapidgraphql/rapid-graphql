@@ -225,3 +225,23 @@ Following mvn dependency should be added:
             <version>1.0.1</version>
         </dependency>
 ```
+In addition to rapid-graphql work properly the `-parameters` flag of java compiler should be enabled.
+In maven project it can be done using mvn-compiler plugin:
+```xml
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <version>3.8.1</version>
+            <configuration>
+                <source>11</source> <!-- Set your Java version -->
+                <target>11</target> <!-- Set your Java version -->
+                <compilerArgs>
+                    <arg>-parameters</arg>
+                </compilerArgs>
+            </configuration>
+        </plugin>
+    </plugins>
+</build>
+```
