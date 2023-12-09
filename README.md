@@ -72,7 +72,6 @@ You can go to http://localhost:8080/graphiql
 Schema is automatically generated from multiple Query Resolvers -> Query type, and Types and Type Resolvers, e.g:
 
 ```java
-import jdk.jfr.DataAmount;
 
 @Service
 class Query1 implements GraphQLQueryResolver {
