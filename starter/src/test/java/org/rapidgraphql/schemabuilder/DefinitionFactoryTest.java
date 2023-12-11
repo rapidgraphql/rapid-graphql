@@ -1,12 +1,12 @@
 package org.rapidgraphql.schemabuilder;
 
-import graphql.kickstart.tools.GraphQLResolver;
 import graphql.language.Definition;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.rapidgraphql.utils.TypeKind;
 
 import java.util.Optional;
 import java.util.stream.Stream;

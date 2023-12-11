@@ -1,13 +1,8 @@
-package org.rapidgraphql.schemabuilder;
+package org.rapidgraphql.utils;
 
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.rapidgraphql.annotations.GraphQLImplementation;
-import org.rapidgraphql.annotations.GraphQLInterface;
 
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
@@ -48,7 +43,6 @@ class TypeUtilsTest {
         AnnotatedType annotatedType2 = TypeUtils.actualTypeArgument(annotatedParameterizedType1.get(), 0);
         assertThat(annotatedType2.getType()).isEqualTo(String.class);
     }
-
     @Test
     public void listElementTypeExtractionTest_and_nonNullValidation() {
         Optional<AnnotatedType> annotatedType = TypeUtils.extractClassFieldAnnotatedType(TypeUtilsTest.class, "listListString");

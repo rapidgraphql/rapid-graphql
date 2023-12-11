@@ -16,6 +16,7 @@ import graphql.language.StringValue;
 import graphql.language.Value;
 import org.rapidgraphql.annotations.GraphQLDefault;
 import org.rapidgraphql.annotations.GraphQLDefaultNull;
+import org.rapidgraphql.utils.TypeUtils;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Parameter;
@@ -31,10 +32,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.lang.String.format;
-import static org.rapidgraphql.schemabuilder.TypeUtils.castToClass;
-import static org.rapidgraphql.schemabuilder.TypeUtils.extractClassFieldAnnotatedType;
-import static org.rapidgraphql.schemabuilder.TypeUtils.extractListElementType;
-import static org.rapidgraphql.schemabuilder.TypeUtils.tryGetClass;
+import static org.rapidgraphql.utils.TypeUtils.castToClass;
+import static org.rapidgraphql.utils.TypeUtils.extractClassFieldAnnotatedType;
+import static org.rapidgraphql.utils.TypeUtils.extractListElementType;
+import static org.rapidgraphql.utils.TypeUtils.tryGetClass;
 
 public class DefaultValueAnnotationProcessorImpl implements DefaultValueAnnotationProcessor {
 

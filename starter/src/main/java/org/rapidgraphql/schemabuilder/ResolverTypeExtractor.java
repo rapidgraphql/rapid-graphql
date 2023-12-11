@@ -2,6 +2,7 @@ package org.rapidgraphql.schemabuilder;
 
 import graphql.kickstart.tools.GraphQLResolver;
 import org.rapidgraphql.exceptions.GraphQLSchemaGenerationException;
+import org.rapidgraphql.utils.TypeKind;
 import org.slf4j.Logger;
 import org.springframework.util.ClassUtils;
 
@@ -13,7 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.rapidgraphql.schemabuilder.TypeUtils.getTypeName;
+import static org.rapidgraphql.utils.TypeUtils.getTypeName;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class ResolverTypeExtractor {

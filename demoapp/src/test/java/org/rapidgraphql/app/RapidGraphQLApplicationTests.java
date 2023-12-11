@@ -7,9 +7,11 @@ import org.rapidgraphql.client.annotations.GraphQLMutation;
 import org.rapidgraphql.client.annotations.GraphQLQuery;
 import org.rapidgraphql.client.exceptions.GraphQLErrorException;
 import org.rapidgraphql.helloworld.Chat;
+import org.rapidgraphql.starwars.model.Droid;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 
+import java.lang.reflect.Field;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,6 +40,7 @@ class RapidGraphQLApplicationTests {
 
 	@Test
 	void clientTestWithGraphQLAnnotation() {
+		Field[] declaredFields = Droid.class.getDeclaredFields();
 		GraphQLApi graphQLApi = RapidGraphQLClient.builder()
 				.target(GraphQLApi.class, "http://localhost:" + randomServerPort + "/graphql");
 		assertThat(graphQLApi.helloWorld()).isEqualTo("Hello World!!");

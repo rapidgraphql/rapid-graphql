@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 import org.junit.jupiter.api.Test;
+import org.rapidgraphql.annotations.GraphQLInputType;
 import org.rapidgraphql.client.annotations.Bearer;
 import org.rapidgraphql.client.annotations.GraphQLMutation;
 import org.rapidgraphql.client.annotations.GraphQLQuery;
@@ -19,6 +20,7 @@ class GraphQLRequestBuilderTest {
     @Value
     @Builder
     @Jacksonized
+    @GraphQLInputType("MyInputType")
     public static class MyType {
         int a;
         int b;
@@ -32,6 +34,9 @@ class GraphQLRequestBuilderTest {
         List<MyType> generateListOf10();
         @GraphQLQuery
         List<Integer> queryWithHeaders(Integer iVal, @Bearer String token, @HttpHeader String xRequestId, String sVal);
+
+        @GraphQLMutation
+        MyType create(MyType input);
     }
     @Test
     public void defaultQuery() throws NoSuchMethodException {
@@ -83,6 +88,21 @@ class GraphQLRequestBuilderTest {
                         "query queryWithHeaders($iVal: Int, $sVal: String){queryWithHeaders(iVal: $iVal, sVal: $sVal)}",
                         Map.of("iVal", iVal, "sVal", sVal),
                         Map.of("X-Request-Id", requestId, "Authorization", "Bearer " + token)
+                );
+    }
+
+    @Test
+    public void queryWithInputType() throws NoSuchMethodException {
+        Method method = TestApi.class.getMethod("create", MyType.class);
+        MyType input = MyType.builder().a(10).b(100).build();
+        GraphQLRequestBody graphQLRequestBody = GraphQLRequestBuilder.build(method, new Object[]{input});
+        assertThat(graphQLRequestBody)
+                .isNotNull()
+                .extracting(GraphQLRequestBody::getFieldName, GraphQLRequestBody::getQuery, GraphQLRequestBody::getVariables, GraphQLRequestBody::getHeaders)
+                .containsExactly("create",
+                        "mutation create($input: MyInputType){create(input: $input)}",
+                        Map.of("input", input),
+                        Map.of()
                 );
     }
 }

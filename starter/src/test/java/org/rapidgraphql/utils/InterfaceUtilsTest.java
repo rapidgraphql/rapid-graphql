@@ -1,4 +1,4 @@
-package org.rapidgraphql.schemabuilder;
+package org.rapidgraphql.utils;
 
 import lombok.Data;
 import lombok.Getter;
@@ -6,11 +6,11 @@ import lombok.Setter;
 import org.junit.jupiter.api.Test;
 import org.rapidgraphql.annotations.GraphQLImplementation;
 import org.rapidgraphql.annotations.GraphQLInterface;
+import org.rapidgraphql.utils.InterfaceUtils;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 class InterfaceUtilsTest {
     @GraphQLInterface

@@ -1,4 +1,4 @@
-package org.rapidgraphql.schemabuilder;
+package org.rapidgraphql.utils;
 
 import org.rapidgraphql.annotations.GraphQLImplementation;
 import org.rapidgraphql.annotations.GraphQLInterface;

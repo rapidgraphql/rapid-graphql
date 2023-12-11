@@ -1,6 +1,6 @@
-package org.rapidgraphql.schemabuilder;
+package org.rapidgraphql.utils;
 
-enum TypeKind {
+public enum TypeKind {
     INPUT_TYPE,
     OUTPUT_TYPE,
     INTERFACE_TYPE,

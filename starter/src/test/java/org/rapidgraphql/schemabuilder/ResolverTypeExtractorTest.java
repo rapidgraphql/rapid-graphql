@@ -2,6 +2,7 @@ package org.rapidgraphql.schemabuilder;
 
 import graphql.kickstart.tools.GraphQLResolver;
 import org.junit.jupiter.api.Test;
+import org.rapidgraphql.utils.TypeKind;
 
 import java.util.Optional;
 

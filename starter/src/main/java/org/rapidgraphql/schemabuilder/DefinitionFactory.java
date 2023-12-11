@@ -8,12 +8,13 @@ import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLScalarType;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.jetbrains.annotations.NotNull;
-import org.rapidgraphql.annotations.GraphQLIgnore;
-import org.rapidgraphql.annotations.GraphQLInputType;
 import org.rapidgraphql.annotations.GraphQLInterface;
 import org.rapidgraphql.directives.SecuredDirectiveWiring;
 import org.rapidgraphql.exceptions.GraphQLSchemaGenerationException;
 import org.rapidgraphql.scalars.TimestampScalar;
+import org.rapidgraphql.utils.FieldAnnotations;
+import org.rapidgraphql.utils.InterfaceUtils;
+import org.rapidgraphql.utils.TypeKind;
 import org.slf4j.Logger;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
@@ -32,9 +33,9 @@ import java.util.stream.Stream;
 
 import static java.lang.String.format;
 import static java.util.Map.entry;
-import static org.rapidgraphql.schemabuilder.MethodsFilter.*;
 import static org.rapidgraphql.schemabuilder.ResolverTypeExtractor.extractResolverType;
-import static org.rapidgraphql.schemabuilder.TypeUtils.*;
+import static org.rapidgraphql.utils.MethodsFilter.*;
+import static org.rapidgraphql.utils.TypeUtils.*;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class DefinitionFactory {
@@ -76,7 +77,7 @@ public class DefinitionFactory {
     private final Map<String, DiscoveredClass> discoveredTypes = new HashMap<>();
     private final Queue<DiscoveredClass> discoveredTypesQueue = new ArrayDeque<>();
     private final Set<String> definedClasses = new HashSet<>();
-    private final Map<TypeKind, Function<DiscoveredClass, Stream<Definition<?>>>> definitionFactory = new HashMap<>();
+    private final Map<org.rapidgraphql.utils.TypeKind, Function<DiscoveredClass, Stream<Definition<?>>>> definitionFactory = new HashMap<>();
     private static final Set<Class<?>> WRAPPER_CLASSES = Set.of(Optional.class, Future.class, CompletableFuture.class);
     private final DefaultValueAnnotationProcessor defaultValueAnnotationProcessor;
     private final Map<String, Class<?>> implementationDictionary = new HashMap<>();
@@ -84,10 +85,10 @@ public class DefinitionFactory {
 
     public DefinitionFactory(DefaultValueAnnotationProcessor defaultValueAnnotationProcessor) {
         this.defaultValueAnnotationProcessor = defaultValueAnnotationProcessor;
-        definitionFactory.put(TypeKind.OUTPUT_TYPE, this::createOutputTypeDefinition);
-        definitionFactory.put(TypeKind.INPUT_TYPE, this::createInputTypeDefinition);
-        definitionFactory.put(TypeKind.ENUM_TYPE, this::createEnumTypeDefinition);
-        definitionFactory.put(TypeKind.INTERFACE_TYPE, this::createInterfaceTypeDefinition);
+        definitionFactory.put(org.rapidgraphql.utils.TypeKind.OUTPUT_TYPE, this::createOutputTypeDefinition);
+        definitionFactory.put(org.rapidgraphql.utils.TypeKind.INPUT_TYPE, this::createInputTypeDefinition);
+        definitionFactory.put(org.rapidgraphql.utils.TypeKind.ENUM_TYPE, this::createEnumTypeDefinition);
+        definitionFactory.put(org.rapidgraphql.utils.TypeKind.INTERFACE_TYPE, this::createInterfaceTypeDefinition);
     }
 
     public List<GraphQLScalarType> getScalars() {
@@ -112,7 +113,7 @@ public class DefinitionFactory {
         String name;
         Class<?> sourceType = null;
         Class<?> resolverType = ClassUtils.getUserClass(resolver);
-        TypeKind typeKind = TypeKind.OUTPUT_TYPE;
+        org.rapidgraphql.utils.TypeKind typeKind = org.rapidgraphql.utils.TypeKind.OUTPUT_TYPE;
         String implementsInterface = null;
         boolean isSubscription = false;
         Optional<DiscoveredClass> discoveredClass = Optional.empty();
@@ -140,10 +141,11 @@ public class DefinitionFactory {
         boolean finalIsSubscription = isSubscription;
         Method[] resolverDeclaredMethods = ReflectionUtils.getUniqueDeclaredMethods(resolverType,
                 method -> resolverMethodFilter(finalSourceType, method, finalIsSubscription));
+        FieldAnnotations fieldAnnotations = new FieldAnnotations(resolverType);
         List<FieldDefinition> typeFields = Arrays.stream(resolverDeclaredMethods)
-                .map(method -> createFieldDefinition(method, skipFirstParameter))
+                .flatMap(method -> createFieldDefinition(method, skipFirstParameter, fieldAnnotations))
                 .collect(Collectors.toList());
-        if (typeKind == TypeKind.OUTPUT_TYPE) {
+        if (typeKind == org.rapidgraphql.utils.TypeKind.OUTPUT_TYPE) {
             return createTypeDefinition(name, typeFields, implementsInterface);
         } else {
             if (interfacesCreatedFromResolvers.containsKey(name)) {
@@ -211,7 +213,7 @@ public class DefinitionFactory {
     }
 
     private void discoverImplementations(DiscoveredClass discoveredInterfaceClass) {
-        if (discoveredInterfaceClass.getTypeKind() != TypeKind.INTERFACE_TYPE) {
+        if (discoveredInterfaceClass.getTypeKind() != org.rapidgraphql.utils.TypeKind.INTERFACE_TYPE) {
             return;
         }
         List<Class<?>> implementations = InterfaceUtils.findImplementations(discoveredInterfaceClass.getClazz());
@@ -219,12 +221,12 @@ public class DefinitionFactory {
                 .map(implementation -> DiscoveredClass.builder()
                         .name(implementation.getSimpleName())
                         .clazz(implementation)
-                        .typeKind(TypeKind.OUTPUT_TYPE)
+                        .typeKind(org.rapidgraphql.utils.TypeKind.OUTPUT_TYPE)
                         .implementsInterface(discoveredInterfaceClass.getName())
                         .build())
                 .forEach(discovered -> {
                     implementationDictionary.put(discovered.getName(), discovered.getClazz());
-                    discoverType(discovered, TypeKind.OUTPUT_TYPE);
+                    discoverType(discovered, org.rapidgraphql.utils.TypeKind.OUTPUT_TYPE);
                 });
     }
 
@@ -255,20 +257,11 @@ public class DefinitionFactory {
     @NotNull
     private List<FieldDefinition> getFieldDefinitions(DiscoveredClass discoveredClass) {
         Method[] declaredMethods = getTypeMethods(discoveredClass);
-        Set<String> ignoredFields = getOutputTypeIgnoredFields(discoveredClass);
+        FieldAnnotations fieldAnnotations = new FieldAnnotations(discoveredClass.getClazz());
         List<FieldDefinition> typeFields = Arrays.stream(declaredMethods)
-                .filter(method -> !ignoredFields.contains(normalizeGetName(method.getName())))
-                .map(method -> createFieldDefinition(method, false))
+                .flatMap(method -> createFieldDefinition(method, false, fieldAnnotations))
                 .collect(Collectors.toList());
         return typeFields;
-    }
-
-    private Set<String> getOutputTypeIgnoredFields(DiscoveredClass discoveredClass) {
-        Set<String> fieldsToIgnore = new HashSet<>();
-        ReflectionUtils.doWithFields(discoveredClass.getClazz(),
-                field -> fieldsToIgnore.add(field.getName()),
-                field -> field.isAnnotationPresent(GraphQLIgnore.class));
-        return fieldsToIgnore;
     }
 
     private Stream<Definition<?>> createInputTypeDefinition(DiscoveredClass discoveredClass) {
@@ -278,28 +271,24 @@ public class DefinitionFactory {
         if (declaredMethods.length == 0) {
             throw new SchemaError(format("No fields were discovered for input type %s", discoveredClass.getClazz().getName()), null);
         }
-        Set<String> ignoredFields = getInputTypeIgnoredFields(discoveredClass);
+        FieldAnnotations fieldAnnotations = new FieldAnnotations(discoveredClass.getClazz());
         List<InputValueDefinition> inputDefinitions = Arrays.stream(declaredMethods)
-                .filter(method -> !ignoredFields.contains(method.getName()))
-                .map(this::createInputValueDefinition)
+                .flatMap(method -> createInputValueDefinition(method, fieldAnnotations))
                 .collect(Collectors.toList());
         definitionBuilder.inputValueDefinitions(inputDefinitions);
         return Stream.of(definitionBuilder.build());
     }
 
-    private Set<String> getInputTypeIgnoredFields(DiscoveredClass discoveredClass) {
-        GraphQLInputType annotation = discoveredClass.getClazz().getAnnotation(GraphQLInputType.class);
-        if (annotation == null) {
-            return Set.of();
+    private Stream<InputValueDefinition> createInputValueDefinition(Method method, FieldAnnotations fieldAnnotations) {
+        String normalizedMethodName = normalizeSetName(method.getName()).get();
+        if (fieldAnnotations.isFieldIgnored(normalizedMethodName)) {
+            return Stream.empty();
         }
-        return Set.of(annotation.ignore());
-    }
-
-    private InputValueDefinition createInputValueDefinition(Method method) {
-        return InputValueDefinition.newInputValueDefinition()
-                .name(normalizeSetName(method.getName()).get())
-                .type(convertToGraphQLType(method.getAnnotatedParameterTypes()[0], TypeKind.INPUT_TYPE))
-                .build();
+        InputValueDefinition.Builder builder = InputValueDefinition.newInputValueDefinition()
+                .name(normalizedMethodName)
+                .type(convertToGraphQLType(method.getAnnotatedParameterTypes()[0], TypeKind.INPUT_TYPE));
+        AnnotationProcessor.applyAnnotations(fieldAnnotations.getFieldAnnotations(normalizedMethodName), builder);
+        return Stream.of(builder.build());
     }
 
     private Stream<Definition<?>> createEnumTypeDefinition(DiscoveredClass discoveredClass) {
@@ -317,13 +306,13 @@ public class DefinitionFactory {
                 .collect(Collectors.toList());
     }
 
-    private void discoverType(DiscoveredClass discoveredClass, TypeKind typeKind) {
-        if (discoveredClass.getClazz().isInterface() && typeKind==TypeKind.INPUT_TYPE) {
+    private void discoverType(DiscoveredClass discoveredClass, org.rapidgraphql.utils.TypeKind typeKind) {
+        if (discoveredClass.getClazz().isInterface() && typeKind== org.rapidgraphql.utils.TypeKind.INPUT_TYPE) {
             throw new GraphQLSchemaGenerationException("Input type can't be interface: " + discoveredClass.getClazz().getName());
         } else if (discoveredClass.getClazz().isEnum()) {
-            discoveredClass.setTypeKind(TypeKind.ENUM_TYPE);
-        } else if (typeKind==TypeKind.INTERFACE_TYPE || discoveredClass.getClazz().isAnnotationPresent(GraphQLInterface.class)) {
-            discoveredClass.setTypeKind(TypeKind.INTERFACE_TYPE);
+            discoveredClass.setTypeKind(org.rapidgraphql.utils.TypeKind.ENUM_TYPE);
+        } else if (typeKind== org.rapidgraphql.utils.TypeKind.INTERFACE_TYPE || discoveredClass.getClazz().isAnnotationPresent(GraphQLInterface.class)) {
+            discoveredClass.setTypeKind(org.rapidgraphql.utils.TypeKind.INTERFACE_TYPE);
         } else {
             discoveredClass.setTypeKind(typeKind);
         }
@@ -349,10 +338,14 @@ public class DefinitionFactory {
                             .name(type.getSimpleName())
                             .clazz(type)
                             .build())
-                        .ifPresent(discovered -> discoverType(discovered, TypeKind.INTERFACE_TYPE));
+                        .ifPresent(discovered -> discoverType(discovered, org.rapidgraphql.utils.TypeKind.INTERFACE_TYPE));
     }
 
-    private FieldDefinition createFieldDefinition(Method method, boolean skipFirst) {
+    private Stream<FieldDefinition> createFieldDefinition(Method method, boolean skipFirst, FieldAnnotations fieldAnnotations) {
+        String normalizeGetName = normalizeGetName(method.getName());
+        if (fieldAnnotations.isFieldIgnored(normalizeGetName)) {
+            return Stream.empty();
+        }
         Parameter[] parameters = method.getParameters();
         Stream<Parameter> parameterStream = Arrays.stream(parameters);
         if (parameters.length >= 1 && DataFetchingEnvironment.class.isAssignableFrom(parameters[parameters.length-1].getType())) {
@@ -365,11 +358,12 @@ public class DefinitionFactory {
                 .map(this::toInputValue)
                 .collect(Collectors.toList());
         FieldDefinition.Builder builder = FieldDefinition.newFieldDefinition()
-                .name(normalizeGetName(method.getName()))
-                .type(convertToOutputGraphQLType(method.getAnnotatedReturnType()))
+                .name(normalizeGetName)
+                .type(convertToOutputGraphQLType(method.getAnnotatedReturnType(), fieldAnnotations.isFieldNotNull(normalizeGetName)))
                 .inputValueDefinitions(inputValueDefinitions);
         AnnotationProcessor.applyAnnotations(method, builder);
-        return builder.build();
+        AnnotationProcessor.applyAnnotations(fieldAnnotations.getFieldAnnotations(normalizeGetName), builder);
+        return Stream.of(builder.build());
     }
 
     private InputValueDefinition toInputValue(Parameter parameter) {
@@ -382,23 +376,27 @@ public class DefinitionFactory {
     }
 
     @NonNull
-    private Type<?> convertToOutputGraphQLType(AnnotatedType annotatedType) {
+    private Type<?> convertToOutputGraphQLType(AnnotatedType annotatedType, boolean fieldIsNotNull) {
         Optional<AnnotatedParameterizedType> parameterizedType = castToParameterizedType(annotatedType);
         if (parameterizedType.isPresent() && WRAPPER_CLASSES.contains(baseType(parameterizedType.get()))) {
             annotatedType = actualTypeArgument(parameterizedType.get(), 0);
         }
-        return convertToGraphQLType(annotatedType, TypeKind.OUTPUT_TYPE);
+        Type<?> fieldType = convertToGraphQLType(annotatedType, TypeKind.OUTPUT_TYPE);
+        if (fieldIsNotNull && fieldType.getClass() != NonNullType.class) {
+            fieldType = new NonNullType(fieldType);
+        }
+        return fieldType;
     }
 
     @NonNull
     private Type<?> convertToInputGraphQLType(AnnotatedType annotatedType) {
-        return convertToGraphQLType(annotatedType, TypeKind.INPUT_TYPE);
+        return convertToGraphQLType(annotatedType, org.rapidgraphql.utils.TypeKind.INPUT_TYPE);
     }
 
-    private Type<?> convertToGraphQLType(AnnotatedType annotatedType, TypeKind typeKind) {
+    private Type<?> convertToGraphQLType(AnnotatedType annotatedType, org.rapidgraphql.utils.TypeKind typeKind) {
         Optional<AnnotatedParameterizedType> parameterizedType = castToParameterizedType(annotatedType);
         Type<?> graphqlType;
-        if (typeKind == TypeKind.OUTPUT_TYPE && parameterizedType.isPresent() && isPublisherType(parameterizedType.get())) {
+        if (typeKind == org.rapidgraphql.utils.TypeKind.OUTPUT_TYPE && parameterizedType.isPresent() && isPublisherType(parameterizedType.get())) {
             AnnotatedType typeOfParameter = actualTypeArgument(parameterizedType.get(), 0);
             graphqlType = convertToGraphQLType(typeOfParameter, typeKind);
         } else if (parameterizedType.isPresent() && isListType(parameterizedType.get())) {

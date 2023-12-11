@@ -1,5 +1,6 @@
 package org.rapidgraphql.client;
 
+import org.rapidgraphql.annotations.GraphQLInputType;
 import org.rapidgraphql.client.annotations.*;
 import org.rapidgraphql.client.exceptions.RapidGraphQLQueryBuilderException;
 
@@ -13,6 +14,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -155,7 +157,7 @@ public class GraphQLRequestBuilder {
     private static String declareType(Type type) {
         if (type instanceof Class<?>) {
             return Optional.ofNullable(graphQLTypeNames.get(type))
-                    .orElseThrow(() -> new RapidGraphQLQueryBuilderException("Simple type " + ((Class<?>)type).getName() + " is not supported for parameter type"));
+                    .orElseGet(() -> processType((Class<?>)type));
         }
         if (type instanceof ParameterizedType) {
             ParameterizedType parameterizedType = (ParameterizedType) type;
@@ -164,6 +166,14 @@ public class GraphQLRequestBuilder {
             }
         }
         throw new RapidGraphQLQueryBuilderException("Can't generate query for parameter type " + type.getTypeName());
+    }
+
+    private static String processType(Class<?> clazz) {
+        GraphQLInputType graphQLInputType = clazz.getAnnotation(GraphQLInputType.class);
+        if (graphQLInputType != null) {
+            return graphQLInputType.value();
+        }
+        return clazz.getSimpleName();
     }
 
     private static GraphQLRequestBody initializeRequest(GraphQL graphQL, Method method) {

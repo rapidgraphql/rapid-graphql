@@ -17,12 +17,15 @@ import org.springframework.core.annotation.MergedAnnotations;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.slf4j.LoggerFactory.getLogger;
@@ -38,7 +41,18 @@ public class AnnotationProcessor {
     );
 
     static public void applyAnnotations(AnnotatedElement element, NodeDirectivesBuilder builder) {
-        MergedAnnotations.from(element).stream()
+        applyMergedAnnotations(MergedAnnotations.from(element), builder);
+    }
+
+    static public void applyAnnotations(Annotation[] annotations, NodeDirectivesBuilder builder) {
+        if (annotations == null || annotations.length == 0) {
+            return;
+        }
+        applyMergedAnnotations(MergedAnnotations.from(annotations), builder);
+    }
+
+    static public void applyMergedAnnotations(MergedAnnotations mergedAnnotations, NodeDirectivesBuilder builder) {
+        mergedAnnotations.stream()
                 .filter(mergedAnnotation -> annotationDirectiveProcessors.containsKey(mergedAnnotation.getType()))
                 .forEach(mergedAnnotation -> annotationDirectiveProcessors.get(mergedAnnotation.getType()).accept(mergedAnnotation, builder));
 

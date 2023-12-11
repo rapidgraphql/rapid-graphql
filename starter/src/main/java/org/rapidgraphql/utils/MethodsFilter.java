@@ -1,9 +1,10 @@
-package org.rapidgraphql.schemabuilder;
+package org.rapidgraphql.utils;
 
 import org.jetbrains.annotations.NotNull;
 import org.rapidgraphql.annotations.DataLoaderMethod;
 import org.rapidgraphql.annotations.GraphQLIgnore;
 import org.rapidgraphql.directives.GraphQLDataLoader;
+import org.rapidgraphql.schemabuilder.DiscoveredClass;
 import org.slf4j.Logger;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -17,7 +18,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 import static java.lang.Character.isUpperCase;
-import static org.rapidgraphql.schemabuilder.TypeUtils.isPublisherType;
+import static org.rapidgraphql.utils.TypeUtils.isPublisherType;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class MethodsFilter {

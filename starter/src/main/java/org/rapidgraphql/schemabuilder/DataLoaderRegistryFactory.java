@@ -3,6 +3,7 @@ package org.rapidgraphql.schemabuilder;
 import org.dataloader.*;
 import org.rapidgraphql.annotations.DataLoaderMethod;
 import org.rapidgraphql.directives.GraphQLDataLoader;
+import org.rapidgraphql.utils.MethodsFilter;
 import org.slf4j.Logger;
 
 import java.lang.reflect.Method;
