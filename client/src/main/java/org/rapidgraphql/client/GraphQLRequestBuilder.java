@@ -85,7 +85,7 @@ public class GraphQLRequestBuilder {
         return true;
     }
 
-    private static final Pattern OBJECT_TYPE_QUERY = Pattern.compile("^\\s*\\{\\s*(\\{.*})\\s*}\\s*$");
+    private static final Pattern OBJECT_TYPE_QUERY = Pattern.compile("^\\s*\\{\\s*(\\{.*})\\s*}\\s*$", Pattern.DOTALL);
     private static boolean tryQueryOfObjectType(String query, Method method, StringBuilder queryBuilder) {
         Matcher matcher = OBJECT_TYPE_QUERY.matcher(query);
         if (!matcher.matches()) {
@@ -97,7 +97,7 @@ public class GraphQLRequestBuilder {
         return true;
     }
 
-    private static final Pattern CUSTOM_QUERY = Pattern.compile("^\\s*\\{\\s*(([a-zA-Z_]\\w*).*)\\s*}\\s*$");
+    private static final Pattern CUSTOM_QUERY = Pattern.compile("^\\s*\\{\\s*(([a-zA-Z_]\\w*).*)\\s*}\\s*$", Pattern.DOTALL);
     private static boolean tryCustomQuery(String query, Method method, StringBuilder queryBuilder, GraphQLRequestBody graphQLRequestBody) {
         Matcher matcher = CUSTOM_QUERY.matcher(query);
         if (!matcher.matches()) {
@@ -140,13 +140,20 @@ public class GraphQLRequestBuilder {
 
     private static final Map<Type, String> graphQLTypeNames = Map.ofEntries(
             entry(Integer.class, "Int"),
+            entry(Integer.TYPE, "Int!"),
             entry(String.class, "String"),
             entry(Boolean.class, "Boolean"),
+            entry(Boolean.TYPE, "Boolean!"),
             entry(Float.class, "Float"),
+            entry(Float.TYPE, "Float!"),
             entry(Double.class, "Float"),
+            entry(Double.TYPE, "Float!"),
             entry(Short.class, "Short"),
+            entry(Short.TYPE, "Short!"),
             entry(Long.class, "Long"),
+            entry(Long.TYPE, "Long"),
             entry(Byte.class, "Byte"),
+            entry(Byte.TYPE, "Byte!"),
             entry(Character.class, "Char"),
             entry(BigDecimal.class, "BigDecimal"),
             entry(BigInteger.class, "BigInteger"),

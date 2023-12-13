@@ -1,5 +1,6 @@
 package org.rapidgraphql.app;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.rapidgraphql.client.RapidGraphQLClient;
 import org.rapidgraphql.client.annotations.GraphQL;
@@ -7,6 +8,7 @@ import org.rapidgraphql.client.annotations.GraphQLMutation;
 import org.rapidgraphql.client.annotations.GraphQLQuery;
 import org.rapidgraphql.client.exceptions.GraphQLErrorException;
 import org.rapidgraphql.helloworld.Chat;
+import org.rapidgraphql.helloworld.MyValue;
 import org.rapidgraphql.starwars.model.Droid;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -63,11 +65,18 @@ class RapidGraphQLApplicationTests {
 		String throwException(String message);
 		@GraphQLMutation("{{youSaid, iSay}}")
 		Chat message(String message);
+
+		@GraphQLQuery("{{a b}}")
+		List<MyValue> myValues(int range);
+	}
+	TestApi testApi;
+	@BeforeEach
+	public void initTestApi() {
+		testApi = RapidGraphQLClient.builder()
+				.target(TestApi.class, "http://localhost:" + randomServerPort + "/graphql");
 	}
 	@Test
 	public void clientTestWithGraphQLQueryAnnotation() {
-		TestApi testApi = RapidGraphQLClient.builder()
-				.target(TestApi.class, "http://localhost:" + randomServerPort + "/graphql");
 		assertThat(testApi.intValue(123)).isEqualTo(123);
 		assertThat(testApi.longValue(123456789L)).isEqualTo(123456789L);
 		assertThat(testApi.stringList(List.of("hello", "world"))).containsExactly("hello", "world");
@@ -77,8 +86,12 @@ class RapidGraphQLApplicationTests {
 
 	@Test
 	public void clientTestWithGraphQLMutationAnnotation() {
-		TestApi testApi = RapidGraphQLClient.builder()
-				.target(TestApi.class, "http://localhost:" + randomServerPort + "/graphql");
 		assertThat(testApi.message("hi")).isEqualTo(Chat.builder().iSay("ih").youSaid("hi").build());
+	}
+
+	@Test
+	public void testRangeOfValues() {
+		List<MyValue> myValues = testApi.myValues(10);
+		assertThat(myValues).hasSize(10);
 	}
 }

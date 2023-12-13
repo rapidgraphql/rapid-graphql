@@ -11,6 +11,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static graphql.ErrorClassification.errorClassification;
 
@@ -22,7 +24,7 @@ public class TestQueries implements GraphQLQueryResolver {
     public Long longValue(Long val) {
         return val;
     }
-    public String longValue(String val) {
+    public String stringValue(String val) {
         return val;
     }
     public List<String> stringList(List<String> val) {
@@ -30,6 +32,12 @@ public class TestQueries implements GraphQLQueryResolver {
     }
     public String throwException(String message) {
         throw new IllegalStateException(message);
+    }
+
+    public List<MyValue> myValues(int range) {
+        return IntStream.range(0,range)
+                .mapToObj(i -> MyValue.builder().a(i).b(i*100).build())
+                .collect(Collectors.toList());
     }
     @ExceptionHandler(value = IllegalStateException.class)
     public GraphQLError toCustomError(IllegalStateException e, ErrorContext errorContext) {

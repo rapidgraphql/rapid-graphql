@@ -24,6 +24,7 @@ class GraphQLRequestBuilderTest {
     public static class MyType {
         int a;
         int b;
+        MyType myType;
     }
     interface TestApi {
         @GraphQLQuery
@@ -34,9 +35,12 @@ class GraphQLRequestBuilderTest {
         List<MyType> generateListOf10();
         @GraphQLQuery
         List<Integer> queryWithHeaders(Integer iVal, @Bearer String token, @HttpHeader String xRequestId, String sVal);
-
         @GraphQLMutation
         MyType create(MyType input);
+        @GraphQLQuery("{{a b myType\n{\na\nb\n}\n}}")
+        MyType getRecursive();
+        @GraphQLQuery
+        String basicTypes(int iVal, float fVal);
     }
     @Test
     public void defaultQuery() throws NoSuchMethodException {
@@ -102,6 +106,36 @@ class GraphQLRequestBuilderTest {
                 .containsExactly("create",
                         "mutation create($input: MyInputType){create(input: $input)}",
                         Map.of("input", input),
+                        Map.of()
+                );
+    }
+
+    @Test
+    public void getRecursive() throws NoSuchMethodException {
+        Method method = TestApi.class.getMethod("getRecursive");
+        GraphQLRequestBody graphQLRequestBody = GraphQLRequestBuilder.build(method, new Object[]{});
+        assertThat(graphQLRequestBody)
+                .isNotNull()
+                .extracting(GraphQLRequestBody::getFieldName, GraphQLRequestBody::getQuery, GraphQLRequestBody::getVariables, GraphQLRequestBody::getHeaders)
+                .containsExactly("getRecursive",
+                        "query getRecursive{getRecursive{a b myType\n{\na\nb\n}\n}}",
+                        Map.of(),
+                        Map.of()
+                );
+    }
+
+    @Test
+    public void basicTypes() throws NoSuchMethodException {
+        Method method = TestApi.class.getMethod("basicTypes", Integer.TYPE, Float.TYPE);
+        int iVal = 1;
+        float fVal = 0.1f;
+        GraphQLRequestBody graphQLRequestBody = GraphQLRequestBuilder.build(method, new Object[]{iVal, fVal});
+        assertThat(graphQLRequestBody)
+                .isNotNull()
+                .extracting(GraphQLRequestBody::getFieldName, GraphQLRequestBody::getQuery, GraphQLRequestBody::getVariables, GraphQLRequestBody::getHeaders)
+                .containsExactly("basicTypes",
+                        "query basicTypes($iVal: Int!, $fVal: Float!){basicTypes(iVal: $iVal, fVal: $fVal)}",
+                        Map.of("iVal", iVal, "fVal", fVal),
                         Map.of()
                 );
     }
