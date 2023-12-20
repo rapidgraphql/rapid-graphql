@@ -5,6 +5,7 @@ import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 import org.junit.jupiter.api.Test;
 import org.rapidgraphql.annotations.GraphQLInputType;
+import org.rapidgraphql.annotations.NotNull;
 import org.rapidgraphql.client.annotations.Bearer;
 import org.rapidgraphql.client.annotations.GraphQLMutation;
 import org.rapidgraphql.client.annotations.GraphQLQuery;
@@ -28,7 +29,7 @@ class GraphQLRequestBuilderTest {
     }
     interface TestApi {
         @GraphQLQuery
-        List<Integer> intList(List<Integer> val);
+        List<Integer> intList(@NotNull List<@NotNull Integer> val);
         @GraphQLMutation("{{a, b}}")
         List<MyType> generateTypeList(Integer elements);
         @GraphQLMutation("{generateTypeList(elements: 10){a, b}}")
@@ -36,21 +37,21 @@ class GraphQLRequestBuilderTest {
         @GraphQLQuery
         List<Integer> queryWithHeaders(Integer iVal, @Bearer String token, @HttpHeader String xRequestId, String sVal);
         @GraphQLMutation
-        MyType create(MyType input);
+        MyType create(@NotNull MyType input);
         @GraphQLQuery("{{a b myType\n{\na\nb\n}\n}}")
         MyType getRecursive();
         @GraphQLQuery
         String basicTypes(int iVal, float fVal);
     }
     @Test
-    public void defaultQuery() throws NoSuchMethodException {
+    public void intListQuery() throws NoSuchMethodException {
         Method method = TestApi.class.getMethod("intList", List.class);
         List<Integer> integerList = List.of(10);
         GraphQLRequestBody graphQLRequestBody = GraphQLRequestBuilder.build(method, new Object[]{integerList});
         assertThat(graphQLRequestBody)
                 .isNotNull()
                 .extracting(GraphQLRequestBody::getFieldName, GraphQLRequestBody::getQuery, GraphQLRequestBody::getVariables)
-                .containsExactly("intList", "query intList($val: [Int]){intList(val: $val)}",
+                .containsExactly("intList", "query intList($val: [Int!]!){intList(val: $val)}",
                         Map.of("val", integerList));
     }
 
@@ -104,7 +105,7 @@ class GraphQLRequestBuilderTest {
                 .isNotNull()
                 .extracting(GraphQLRequestBody::getFieldName, GraphQLRequestBody::getQuery, GraphQLRequestBody::getVariables, GraphQLRequestBody::getHeaders)
                 .containsExactly("create",
-                        "mutation create($input: MyInputType){create(input: $input)}",
+                        "mutation create($input: MyInputType!){create(input: $input)}",
                         Map.of("input", input),
                         Map.of()
                 );

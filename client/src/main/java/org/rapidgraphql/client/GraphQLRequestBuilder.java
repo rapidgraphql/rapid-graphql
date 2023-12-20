@@ -20,6 +20,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static java.util.Map.entry;
+import static org.rapidgraphql.client.TypeUtils.declareType;
 
 public class GraphQLRequestBuilder {
     public static GraphQLRequestBody build(Method method, Object[] args) {
@@ -115,7 +116,7 @@ public class GraphQLRequestBuilder {
         queryBuilder.append('(');
         queryBuilder.append(Arrays.stream(method.getParameters())
                 .filter(GraphQLRequestBuilder::filterQueryParameters)
-                .map(p -> String.format("$%s: %s", p.getName(), declareType(p.getParameterizedType())))
+                .map(p -> String.format("$%s: %s", p.getName(), declareType(p.getAnnotatedType())))
                 .collect(Collectors.joining(", ")));
 
         queryBuilder.append(')');
@@ -136,51 +137,6 @@ public class GraphQLRequestBuilder {
 
     private static boolean filterQueryParameters(Parameter parameter) {
         return !parameter.isAnnotationPresent(HttpHeader.class) && !parameter.isAnnotationPresent(Bearer.class);
-    }
-
-    private static final Map<Type, String> graphQLTypeNames = Map.ofEntries(
-            entry(Integer.class, "Int"),
-            entry(Integer.TYPE, "Int!"),
-            entry(String.class, "String"),
-            entry(Boolean.class, "Boolean"),
-            entry(Boolean.TYPE, "Boolean!"),
-            entry(Float.class, "Float"),
-            entry(Float.TYPE, "Float!"),
-            entry(Double.class, "Float"),
-            entry(Double.TYPE, "Float!"),
-            entry(Short.class, "Short"),
-            entry(Short.TYPE, "Short!"),
-            entry(Long.class, "Long"),
-            entry(Long.TYPE, "Long"),
-            entry(Byte.class, "Byte"),
-            entry(Byte.TYPE, "Byte!"),
-            entry(Character.class, "Char"),
-            entry(BigDecimal.class, "BigDecimal"),
-            entry(BigInteger.class, "BigInteger"),
-            entry(LocalDate.class, "Date"),
-            entry(OffsetDateTime.class, "DateTime"),
-            entry(java.sql.Timestamp.class, "Timestamp")
-    );
-    private static String declareType(Type type) {
-        if (type instanceof Class<?>) {
-            return Optional.ofNullable(graphQLTypeNames.get(type))
-                    .orElseGet(() -> processType((Class<?>)type));
-        }
-        if (type instanceof ParameterizedType) {
-            ParameterizedType parameterizedType = (ParameterizedType) type;
-            if (parameterizedType.getRawType() == List.class) {
-                return "[" + declareType(parameterizedType.getActualTypeArguments()[0]) + "]";
-            }
-        }
-        throw new RapidGraphQLQueryBuilderException("Can't generate query for parameter type " + type.getTypeName());
-    }
-
-    private static String processType(Class<?> clazz) {
-        GraphQLInputType graphQLInputType = clazz.getAnnotation(GraphQLInputType.class);
-        if (graphQLInputType != null) {
-            return graphQLInputType.value();
-        }
-        return clazz.getSimpleName();
     }
 
     private static GraphQLRequestBody initializeRequest(GraphQL graphQL, Method method) {
