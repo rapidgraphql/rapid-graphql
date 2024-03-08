@@ -6,11 +6,11 @@
     <parent>
         <groupId>io.github.rapidgraphql</groupId>
         <artifactId>rapid-graphql</artifactId>
-        <version>1.1.3</version>
+        <version>1.1.5</version>
     </parent>
 
     <artifactId>rapid-graphql-starter</artifactId>
-    <version>1.1.3</version>
+    <version>1.1.5</version>
     <packaging>jar</packaging>
 
     <name>starter</name>
@@ -26,7 +26,7 @@
         <dependency>
             <groupId>io.github.rapidgraphql</groupId>
             <artifactId>rapid-graphql-annotations</artifactId>
-            <version>1.1.3</version>
+            <version>1.1.5</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -73,6 +73,17 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
+            <groupId>com.graphql-java</groupId>
+            <artifactId>graphql-java-extended-scalars</artifactId>
+            <version>${graphql-scalars.version}</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>graphql-java</artifactId>
+                    <groupId>com.graphql-java</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
             <groupId>com.graphql-java-kickstart</groupId>
             <artifactId>graphql-spring-boot-starter</artifactId>
             <version>${graphql-spring-boot-starter.version}</version>
@@ -82,15 +93,14 @@
                     <groupId>com.graphql-java</groupId>
                 </exclusion>
                 <exclusion>
+                    <groupId>com.graphql-java</groupId>
+                    <artifactId>graphql-java-extended-scalars</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>io.github.graphql-java</groupId>
                     <artifactId>graphql-java-annotations</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.graphql-java</groupId>
-            <artifactId>graphql-java-extended-scalars</artifactId>
-            <version>${graphql-scalars.version}</version>
         </dependency>
         <!--	Parameter names	-->
         <dependency>

@@ -49,12 +49,12 @@ In ``pom.xml`` you should add following dependencies:
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
-            <version>2.7.15</version>
+            <version>2.7.18</version>
         </dependency>
         <dependency>
             <groupId>io.github.rapidgraphql</groupId>
             <artifactId>rapid-graphql-starter</artifactId>
-            <version>1.1.3</version>
+            <version>1.1.5</version>
         </dependency>
         <dependency> <!-- Recommended -->
             <groupId>org.projectlombok</groupId>
@@ -221,7 +221,7 @@ Following mvn dependency should be added:
         <dependency>
             <groupId>io.github.rapidgraphql</groupId>
             <artifactId>rapid-graphql-client</artifactId>
-            <version>1.1.3</version>
+            <version>1.1.5</version>
         </dependency>
 ```
 In addition to rapid-graphql work properly the `-parameters` flag of java compiler should be enabled.
