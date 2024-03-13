@@ -75,7 +75,7 @@ public class TypeUtils {
         return Publisher.class.isAssignableFrom(type);
     }
 
-        public static Class<?> baseType(AnnotatedParameterizedType annotatedParameterizedType) {
+    public static Class<?> baseType(AnnotatedParameterizedType annotatedParameterizedType) {
         Type rawType = ((ParameterizedType) annotatedParameterizedType.getType()).getRawType();
         if (!(rawType instanceof Class<?>)) {
             throw new RuntimeException("Parameterized type " + rawType.getTypeName() + " can't be processed");

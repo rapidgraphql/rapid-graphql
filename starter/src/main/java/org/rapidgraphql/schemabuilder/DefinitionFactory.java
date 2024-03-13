@@ -11,6 +11,7 @@ import org.jetbrains.annotations.NotNull;
 import org.rapidgraphql.annotations.GraphQLInterface;
 import org.rapidgraphql.directives.SecuredDirectiveWiring;
 import org.rapidgraphql.exceptions.GraphQLSchemaGenerationException;
+import org.rapidgraphql.scalars.LocalDateTimeScalar;
 import org.rapidgraphql.scalars.TimestampScalar;
 import org.rapidgraphql.utils.FieldAnnotations;
 import org.rapidgraphql.utils.InterfaceUtils;
@@ -23,6 +24,7 @@ import java.lang.reflect.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -48,7 +50,8 @@ public class DefinitionFactory {
             ExtendedScalars.GraphQLLong,
             ExtendedScalars.Date,
             ExtendedScalars.DateTime,
-            TimestampScalar.INSTANCE
+            TimestampScalar.INSTANCE,
+            LocalDateTimeScalar.INSTANCE
     );
     private static final Map<java.lang.reflect.Type, Type<?>> scalarTypes = Map.ofEntries(
             entry(Integer.TYPE, nonNullType("Int")),
@@ -72,7 +75,8 @@ public class DefinitionFactory {
             entry(BigInteger.class, nullableType(ExtendedScalars.GraphQLBigInteger.getName())),
             entry(LocalDate.class, nullableType(ExtendedScalars.Date.getName())),
             entry(OffsetDateTime.class, nullableType(ExtendedScalars.DateTime.getName())),
-            entry(java.sql.Timestamp.class, nullableType(TimestampScalar.INSTANCE.getName()))
+            entry(java.sql.Timestamp.class, nullableType(TimestampScalar.INSTANCE.getName())),
+            entry(LocalDateTime.class, nullableType(LocalDateTimeScalar.INSTANCE.getName()))
     );
     private final Map<String, DiscoveredClass> discoveredTypes = new HashMap<>();
     private final Queue<DiscoveredClass> discoveredTypesQueue = new ArrayDeque<>();
@@ -141,7 +145,7 @@ public class DefinitionFactory {
         boolean finalIsSubscription = isSubscription;
         Method[] resolverDeclaredMethods = ReflectionUtils.getUniqueDeclaredMethods(resolverType,
                 method -> resolverMethodFilter(finalSourceType, method, finalIsSubscription));
-        FieldAnnotations fieldAnnotations = new FieldAnnotations(resolverType);
+        FieldAnnotations fieldAnnotations = new FieldAnnotations(resolverType, typeKind);
         List<FieldDefinition> typeFields = Arrays.stream(resolverDeclaredMethods)
                 .flatMap(method -> createFieldDefinition(method, skipFirstParameter, fieldAnnotations))
                 .collect(Collectors.toList());
@@ -257,7 +261,7 @@ public class DefinitionFactory {
     @NotNull
     private List<FieldDefinition> getFieldDefinitions(DiscoveredClass discoveredClass) {
         Method[] declaredMethods = getTypeMethods(discoveredClass);
-        FieldAnnotations fieldAnnotations = new FieldAnnotations(discoveredClass.getClazz());
+        FieldAnnotations fieldAnnotations = new FieldAnnotations(discoveredClass.getClazz(), discoveredClass.getTypeKind());
         List<FieldDefinition> typeFields = Arrays.stream(declaredMethods)
                 .flatMap(method -> createFieldDefinition(method, false, fieldAnnotations))
                 .collect(Collectors.toList());
@@ -271,7 +275,7 @@ public class DefinitionFactory {
         if (declaredMethods.length == 0) {
             throw new SchemaError(format("No fields were discovered for input type %s", discoveredClass.getClazz().getName()), null);
         }
-        FieldAnnotations fieldAnnotations = new FieldAnnotations(discoveredClass.getClazz());
+        FieldAnnotations fieldAnnotations = new FieldAnnotations(discoveredClass.getClazz(), discoveredClass.getTypeKind());
         List<InputValueDefinition> inputDefinitions = Arrays.stream(declaredMethods)
                 .flatMap(method -> createInputValueDefinition(method, fieldAnnotations))
                 .collect(Collectors.toList());

@@ -5,12 +5,12 @@
     <parent>
         <artifactId>rapid-graphql</artifactId>
         <groupId>io.github.rapidgraphql</groupId>
-        <version>1.1.5</version>
+        <version>1.1.6</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>rapid-graphql-client</artifactId>
-    <version>1.1.5</version>
+    <version>1.1.6</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -31,7 +31,7 @@
         <dependency>
             <groupId>io.github.rapidgraphql</groupId>
             <artifactId>rapid-graphql-annotations</artifactId>
-            <version>1.1.5</version>
+            <version>1.1.6</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

@@ -27,8 +27,8 @@ public class FieldAnnotations {
                 .anyMatch(annotation -> notNullPredicate.test(annotation.toString()));
     }
 
-    public FieldAnnotations(Class<?> clazz) {
-        typeLevelIgnoredFields = getTypeLevelIgnoredFields(clazz);
+    public FieldAnnotations(Class<?> clazz, TypeKind typeKind) {
+        typeLevelIgnoredFields = getTypeLevelIgnoredFields(clazz, typeKind);
         fieldsWithAnnotations = getAllFields(clazz)
                 .map(field -> Map.entry(field.getName(), field.getAnnotations()))
                 .filter(e -> e.getValue().length > 0)
@@ -44,12 +44,15 @@ public class FieldAnnotations {
         return classHierarchyStreamBuilder.build()
                 .flatMap(c -> Arrays.stream(c.getDeclaredFields()));
     }
-    private static Set<String> getTypeLevelIgnoredFields(Class<?> clazz) {
-        GraphQLInputType annotation = clazz.getAnnotation(GraphQLInputType.class);
-        if (annotation == null) {
-            return Set.of();
+    private static Set<String> getTypeLevelIgnoredFields(Class<?> clazz, TypeKind typeKind) {
+        if (typeKind == TypeKind.INPUT_TYPE) {
+            GraphQLInputType annotation = clazz.getAnnotation(GraphQLInputType.class);
+            if (annotation == null) {
+                return Set.of();
+            }
+            return Set.of(annotation.ignore());
         }
-        return Set.of(annotation.ignore());
+        return  Set.of();
     }
 
     public boolean isFieldIgnored(String fieldName) {

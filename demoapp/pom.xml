@@ -6,11 +6,11 @@
     <parent>
         <groupId>io.github.rapidgraphql</groupId>
         <artifactId>rapid-graphql</artifactId>
-        <version>1.1.5</version>
+        <version>1.1.6</version>
     </parent>
 
     <artifactId>rapid-graphql-demoapp</artifactId>
-    <version>1.1.5</version>
+    <version>1.1.6</version>
     <packaging>jar</packaging>
 
     <name>demoapp</name>
@@ -42,12 +42,12 @@
         <dependency>
             <groupId>io.github.rapidgraphql</groupId>
             <artifactId>rapid-graphql-starter</artifactId>
-            <version>1.1.5</version>
+            <version>1.1.6</version>
         </dependency>
         <dependency>
             <groupId>io.github.rapidgraphql</groupId>
             <artifactId>rapid-graphql-client</artifactId>
-            <version>1.1.5</version>
+            <version>1.1.6</version>
             <scope>test</scope>
         </dependency>
 
