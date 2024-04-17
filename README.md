@@ -54,7 +54,7 @@ In ``pom.xml`` you should add following dependencies:
         <dependency>
             <groupId>io.github.rapidgraphql</groupId>
             <artifactId>rapid-graphql-starter</artifactId>
-            <version>1.1.5</version>
+            <version>1.2.0</version>
         </dependency>
         <dependency> <!-- Recommended -->
             <groupId>org.projectlombok</groupId>
@@ -189,7 +189,30 @@ class MyQuery implements GraphQLQueryResolver {
 ```
 
 ### Data Loaders
+Rapidgraphql simplifies a lot usage of dataloaders, all you need is to implement batchload method like following:
+```java
+@Component
+public class ProductDataLoader extends GraphQLMappedBatchLoader<String, Product> {
+    private final ProductRepository productRepository;
+    @Override
+    public Map<String, Product> syncLoad(Set<String> products) {
+        return productRepository.findAndMapById(products);
+    }
+}
 
+// Use data loader in your code in the following way:
+
+@Component
+@RequiredArgsConstructor
+public class OrderResolver implements GraphQLResolver<Order> {
+    // Other methods
+    private final ProductDataLoader productDataLoader;
+
+    public CompletableFuture<Product> product(Order order, DataFetchingEnvironment env) {
+        return productDataLoader.get(order.getProduct(), env);
+    }
+}
+```
 ## Rapid GraphQL client
 Version 0.1.0 contains Feign inspired implementation of GraphQL client, which cal be as simple as:
 ```java
@@ -221,7 +244,7 @@ Following mvn dependency should be added:
         <dependency>
             <groupId>io.github.rapidgraphql</groupId>
             <artifactId>rapid-graphql-client</artifactId>
-            <version>1.1.5</version>
+            <version>1.2.0</version>
         </dependency>
 ```
 In addition to rapid-graphql work properly the `-parameters` flag of java compiler should be enabled.

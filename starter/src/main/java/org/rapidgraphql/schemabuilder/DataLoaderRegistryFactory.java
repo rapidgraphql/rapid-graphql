@@ -2,6 +2,7 @@ package org.rapidgraphql.schemabuilder;
 
 import org.dataloader.*;
 import org.rapidgraphql.annotations.DataLoaderMethod;
+import org.rapidgraphql.dataloaders.DataLoaderRegistrar;
 import org.rapidgraphql.directives.GraphQLDataLoader;
 import org.rapidgraphql.utils.MethodsFilter;
 import org.slf4j.Logger;
@@ -16,21 +17,25 @@ import static org.slf4j.LoggerFactory.getLogger;
 public class DataLoaderRegistryFactory {
     private static final Logger LOGGER = getLogger(DataLoaderRegistryFactory.class);
 
-    private final List<DataLoaderRegistrator> registrators = new ArrayList<>();
+    private final List<DataLoaderRegistrar> registrars = new ArrayList<>();
 
     public DataLoaderRegistryFactory(List<? extends GraphQLDataLoader> dataLoaders) {
         for(GraphQLDataLoader graphQLDataLoader: dataLoaders) {
-            Method[] dataLoaderMethods = MethodsFilter.getDataLoaderMethods(graphQLDataLoader.getClass());
-            Arrays.stream(dataLoaderMethods)
-                    .map(method -> createRegistrator(method, graphQLDataLoader))
-                    .filter(Objects::nonNull)
-                    .forEach(registrators::add);
+            if (graphQLDataLoader instanceof DataLoaderRegistrar) {
+                registrars.add((DataLoaderRegistrar)graphQLDataLoader);
+            } else {
+                Method[] dataLoaderMethods = MethodsFilter.getDataLoaderMethods(graphQLDataLoader.getClass());
+                Arrays.stream(dataLoaderMethods)
+                        .map(method -> createRegistrar(method, graphQLDataLoader))
+                        .filter(Objects::nonNull)
+                        .forEach(registrars::add);
+            }
         }
     }
 
     public DataLoaderRegistry build() {
         DataLoaderRegistry dataLoaderRegistry = new DataLoaderRegistry();
-        registrators.forEach(registrator -> registrator.registerIn(dataLoaderRegistry));
+        registrars.forEach(registrar -> registrar.registerIn(dataLoaderRegistry));
         return dataLoaderRegistry;
     }
 
@@ -38,7 +43,7 @@ public class DataLoaderRegistryFactory {
         return method.getAnnotation(DataLoaderMethod.class).value();
     }
 
-    private DataLoaderRegistrator createRegistrator(Method method, GraphQLDataLoader dataLoader) {
+    private org.rapidgraphql.dataloaders.DataLoaderRegistrar createRegistrar(Method method, GraphQLDataLoader dataLoader) {
         String dataLoaderName = getDataLoaderName(method);
         if (method.getReturnType().equals(List.class)) {
             return new BatchLoaderMethod(dataLoaderName, dataLoader, method);
@@ -51,10 +56,7 @@ public class DataLoaderRegistryFactory {
 
     }
 
-    public interface DataLoaderRegistrator {
-        void registerIn(DataLoaderRegistry dataLoaderRegistry);
-    }
-    public static class BatchLoaderMethod implements BatchLoader<Object, Object>, DataLoaderRegistrator {
+    public static class BatchLoaderMethod implements BatchLoader<Object, Object>, DataLoaderRegistrar {
         private final GraphQLDataLoader graphQLDataLoader;
         private final Method method;
         private final String name;
@@ -88,7 +90,7 @@ public class DataLoaderRegistryFactory {
             dataLoaderRegistry.register(name, DataLoaderFactory.newDataLoader(this));
         }
     }
-    public static class MappedBatchLoaderMethod implements MappedBatchLoader<Object, Object>, DataLoaderRegistrator {
+    public static class MappedBatchLoaderMethod implements MappedBatchLoader<Object, Object>, DataLoaderRegistrar {
         private String name;
         private final GraphQLDataLoader graphQLDataLoader;
         private final Method method;
