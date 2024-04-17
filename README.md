@@ -234,8 +234,8 @@ In maven project it can be done using mvn-compiler plugin:
             <artifactId>maven-compiler-plugin</artifactId>
             <version>3.8.1</version>
             <configuration>
-                <source>11</source> <!-- Set your Java version -->
-                <target>11</target> <!-- Set your Java version -->
+                <source>17</source> <!-- Set your Java version -->
+                <target>17</target> <!-- Set your Java version -->
                 <compilerArgs>
                     <arg>-parameters</arg>
                 </compilerArgs>
