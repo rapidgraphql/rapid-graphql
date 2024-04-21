@@ -10,6 +10,7 @@ Code generation is used by some frameworks to simplify this synchronization, but
 
 Rapid GraphQL framework is based on the spring boot framework and GraphQL Java Kickstart (https://www.graphql-java-kickstart.com/)
 It doesn't require graphql schema files, and it automatically creates graphql endpoint (and graphiql if needed)
+Version 2.0.0 moves to Java 17.
 
 ### Hello World
 As in every spring application create an GraphQLApplication.java class:
@@ -54,7 +55,7 @@ In ``pom.xml`` you should add following dependencies:
         <dependency>
             <groupId>io.github.rapidgraphql</groupId>
             <artifactId>rapid-graphql-starter</artifactId>
-            <version>1.2.0</version>
+            <version>2.0.0</version>
         </dependency>
         <dependency> <!-- Recommended -->
             <groupId>org.projectlombok</groupId>
@@ -214,7 +215,7 @@ public class OrderResolver implements GraphQLResolver<Order> {
 }
 ```
 ## Rapid GraphQL client
-Version 0.1.0 contains Feign inspired implementation of GraphQL client, which cal be as simple as:
+Rapidgraphql contains Feign inspired implementation of GraphQL client, which cal be as simple as:
 ```java
 interface TestApi {
     @GraphQLQuery
@@ -244,7 +245,7 @@ Following mvn dependency should be added:
         <dependency>
             <groupId>io.github.rapidgraphql</groupId>
             <artifactId>rapid-graphql-client</artifactId>
-            <version>1.2.0</version>
+            <version>2.0.0</version>
         </dependency>
 ```
 In addition to rapid-graphql work properly the `-parameters` flag of java compiler should be enabled.
