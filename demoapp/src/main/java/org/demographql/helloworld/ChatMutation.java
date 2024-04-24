@@ -1,4 +1,4 @@
-package org.rapidgraphql.helloworld;
+package org.demographql.helloworld;
 
 import graphql.kickstart.tools.GraphQLMutationResolver;
 import org.jetbrains.annotations.NotNull;

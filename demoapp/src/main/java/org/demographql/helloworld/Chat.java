@@ -1,4 +1,4 @@
-package org.rapidgraphql.helloworld;
+package org.demographql.helloworld;
 
 import lombok.Builder;
 import lombok.Data;

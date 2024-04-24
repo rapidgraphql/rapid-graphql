@@ -1,7 +1,7 @@
-package org.rapidgraphql.starwars.repository;
+package org.demographql.starwars.repository;
 
-import org.rapidgraphql.starwars.model.Episode;
-import org.rapidgraphql.starwars.model.FilmCharacter;
+import org.demographql.starwars.model.Episode;
+import org.demographql.starwars.model.FilmCharacter;
 
 import java.util.List;
 
