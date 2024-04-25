@@ -10,8 +10,8 @@
 	</parent>
 	<groupId>io.github.rapidgraphql</groupId>
 	<artifactId>rapid-graphql</artifactId>
-	<version>2.0.0</version>
-	<name>rapid-graphql</name>
+	<version>2.0.1</version>
+ 	<name>rapid-graphql</name>
 	<description>graphql booster library</description>
 	<modules>
         <module>annotations</module>
@@ -89,12 +89,6 @@
 			</dependency>
 		</dependencies>
 	</dependencyManagement><!--	<distributionManagement>-->
-<!--		<repository>-->
-<!--			<id>github-rapidgraphql</id>-->
-<!--			<name>GitHub rapidgraphql/rapid-graphql Apache Maven Packages</name>-->
-<!--			<url>https://maven.pkg.github.com/rapidgraphql/rapid-graphql</url>-->
-<!--		</repository>-->
-<!--	</distributionManagement>-->
 	<distributionManagement>
 		<snapshotRepository>
 			<id>ossrh</id>

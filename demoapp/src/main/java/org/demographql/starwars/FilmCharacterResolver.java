@@ -1,13 +1,12 @@
-package org.rapidgraphql.starwars;
+package org.demographql.starwars;
 
 import graphql.kickstart.tools.GraphQLResolver;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import org.demographql.starwars.model.Episode;
+import org.demographql.starwars.model.FilmCharacter;
+import org.demographql.starwars.repository.FilmCharacterRepository;
 import org.rapidgraphql.annotations.GraphQLDeprecated;
 import org.rapidgraphql.annotations.GraphQLDescription;
 import org.rapidgraphql.annotations.NotNull;
-import org.rapidgraphql.starwars.model.Episode;
-import org.rapidgraphql.starwars.model.FilmCharacter;
-import org.rapidgraphql.starwars.repository.FilmCharacterRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

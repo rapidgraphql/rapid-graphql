@@ -1,9 +1,9 @@
-package org.rapidgraphql.starwars;
+package org.demographql.starwars;
 
 import graphql.kickstart.tools.GraphQLQueryResolver;
-import org.rapidgraphql.starwars.model.Episode;
-import org.rapidgraphql.starwars.model.FilmCharacter;
-import org.rapidgraphql.starwars.repository.FilmCharacterRepository;
+import org.demographql.starwars.model.Episode;
+import org.demographql.starwars.model.FilmCharacter;
+import org.demographql.starwars.repository.FilmCharacterRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

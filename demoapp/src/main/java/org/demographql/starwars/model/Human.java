@@ -1,4 +1,4 @@
-package org.rapidgraphql.starwars.model;
+package org.demographql.starwars.model;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

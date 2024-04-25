@@ -1,12 +1,12 @@
-package org.rapidgraphql.starwars.repository;
+package org.demographql.starwars.repository;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.tuple.Pair;
-import org.rapidgraphql.starwars.model.Droid;
-import org.rapidgraphql.starwars.model.Episode;
-import org.rapidgraphql.starwars.model.FilmCharacter;
-import org.rapidgraphql.starwars.model.Human;
+import org.demographql.starwars.model.Human;
+import org.demographql.starwars.model.Droid;
+import org.demographql.starwars.model.Episode;
+import org.demographql.starwars.model.FilmCharacter;
 import org.springframework.stereotype.Component;
 
 import java.util.*;

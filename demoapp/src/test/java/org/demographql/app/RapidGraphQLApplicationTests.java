@@ -1,4 +1,4 @@
-package org.rapidgraphql.app;
+package org.demographql.app;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -7,9 +7,9 @@ import org.rapidgraphql.client.annotations.GraphQL;
 import org.rapidgraphql.client.annotations.GraphQLMutation;
 import org.rapidgraphql.client.annotations.GraphQLQuery;
 import org.rapidgraphql.client.exceptions.GraphQLErrorException;
-import org.rapidgraphql.helloworld.Chat;
-import org.rapidgraphql.helloworld.MyValue;
-import org.rapidgraphql.starwars.model.Droid;
+import org.demographql.helloworld.Chat;
+import org.demographql.helloworld.MyValue;
+import org.demographql.starwars.model.Droid;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 
