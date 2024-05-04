@@ -47,7 +47,7 @@ public class GraphQLSchemaResolver {
         definitionFactory = new DefinitionFactory(new DefaultValueAnnotationProcessorImpl());
     }
 
-    class MyTypeDefinitionFactory implements TypeDefinitionFactory {
+    static class MyTypeDefinitionFactory implements TypeDefinitionFactory {
         private final List<? extends GraphQLResolver<?>> resolvers;
         private final List<Definition<?>> definitions;
 

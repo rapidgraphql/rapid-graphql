@@ -1,11 +1,10 @@
 package org.rapidgraphql.dataloaders;
 
-import graphql.schema.DataFetchingEnvironment;
-import org.dataloader.*;
-import org.rapidgraphql.directives.GraphQLDataLoader;
-import org.springframework.util.ClassUtils;
+import org.dataloader.DataLoader;
+import org.dataloader.DataLoaderFactory;
+import org.dataloader.MappedBatchLoader;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -34,8 +33,8 @@ public abstract class GraphQLMappedBatchLoader<K, T> extends AbstractGraphQLBatc
     }
 
     @Override
-    public void registerIn(DataLoaderRegistry dataLoaderRegistry) {
-        dataLoaderRegistry.register(getDataLoaderName(),
-                DataLoaderFactory.newMappedDataLoader(this, getDataLoaderOptions()));
+    @NotNull
+    protected DataLoader<K, T> createNewDataLoader() {
+        return DataLoaderFactory.newMappedDataLoader(this, getDataLoaderOptions());
     }
 }
