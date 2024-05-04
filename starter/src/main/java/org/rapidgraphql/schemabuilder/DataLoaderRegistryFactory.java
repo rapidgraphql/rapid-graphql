@@ -29,7 +29,7 @@ public class DataLoaderRegistryFactory implements AutoCloseable {
     private final Duration scheduleDuration;
     private boolean closed = false;
     private final Set<String> scheduledDataLoaders;
-    private DispatchPredicate dispatchPredicate;
+    private final DispatchPredicate dispatchPredicate;
 
     public DataLoaderRegistryFactory(List<? extends GraphQLDataLoader> dataLoaders) {
         this(dataLoaders, DEFAULT_RESCHEDULE_INTERVAL_IN_MILLIS, DEFAULT_SCHEDULER_POOL_SIZE);

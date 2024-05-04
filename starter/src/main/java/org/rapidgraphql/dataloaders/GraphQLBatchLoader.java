@@ -3,7 +3,6 @@ package org.rapidgraphql.dataloaders;
 import org.dataloader.BatchLoader;
 import org.dataloader.DataLoader;
 import org.dataloader.DataLoaderFactory;
-import org.dataloader.DataLoaderRegistry;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
