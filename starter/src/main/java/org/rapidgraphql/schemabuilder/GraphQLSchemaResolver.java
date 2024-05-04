@@ -7,12 +7,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import graphql.kickstart.autoconfigure.tools.GraphQLJavaToolsAutoConfiguration;
 import graphql.kickstart.servlet.context.GraphQLServletContextBuilder;
-import graphql.kickstart.tools.GraphQLResolver;
-import graphql.kickstart.tools.PerFieldObjectMapperProvider;
-import graphql.kickstart.tools.SchemaParser;
-import graphql.kickstart.tools.SchemaParserBuilder;
-import graphql.kickstart.tools.SchemaParserOptions;
-import graphql.kickstart.tools.TypeDefinitionFactory;
+import graphql.kickstart.tools.*;
 import graphql.language.Definition;
 import graphql.language.ScalarTypeDefinition;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -31,7 +26,6 @@ import org.springframework.context.annotation.Bean;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -67,10 +61,10 @@ public class GraphQLSchemaResolver {
         definitions.add(definitionFactory.createRoleDirectiveDefinition());
         definitions.addAll(definitionFactory.getScalars().stream()
                 .map(scalar -> ScalarTypeDefinition.newScalarTypeDefinition().name(scalar.getName()).build())
-                .collect(Collectors.toList()));
+                .toList());
         definitions.addAll(resolvers.stream()
                 .flatMap(definitionFactory::createTypeDefinition)
-                .collect(Collectors.toList()));
+                .toList());
         definitions.addAll(definitionFactory.processTypesQueue());
         return definitions;
     }
