@@ -17,6 +17,7 @@ import org.rapidgraphql.directives.RoleExtractor;
 import org.rapidgraphql.directives.SecuredDirectiveWiring;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -33,13 +34,9 @@ import static org.slf4j.LoggerFactory.getLogger;
 @AutoConfiguration
 public class GraphQLSchemaResolver {
     private static final Logger LOGGER = getLogger(GraphQLSchemaResolver.class);
-    private final DefinitionFactory definitionFactory;
+    private final DefinitionFactory definitionFactory= new DefinitionFactory(new DefaultValueAnnotationProcessorImpl());
 
     private SchemaParser schemaParser = null;
-
-    public GraphQLSchemaResolver() {
-        definitionFactory = new DefinitionFactory(new DefaultValueAnnotationProcessorImpl());
-    }
 
     static class MyTypeDefinitionFactory implements TypeDefinitionFactory {
         private final List<? extends GraphQLResolver<?>> resolvers;
@@ -115,9 +112,18 @@ public class GraphQLSchemaResolver {
         return schemaParser;
     }
 
+    @Value("${rapidgraphql.dataloaders.reschedule-interval-in-millis:10}")
+    private Long dataloadersRescheduleIntervalInMillis;
+
+    @Value("${rapidgraphql.dataloaders.scheduler-pool-size:1}")
+    private int dataloadersSchedulerPoolSize;
     @Bean
-    public GraphQLServletContextBuilder getGraphQLServletContextBuilder(List<? extends GraphQLDataLoader> dataLoaders) {
-        return new RapidGraphQLContextBuilder(new DataLoaderRegistryFactory(dataLoaders));
+    public DataLoaderRegistryFactory dataLoaderRegistryFactory(List<? extends GraphQLDataLoader> dataLoaders) {
+        return new DataLoaderRegistryFactory(dataLoaders, dataloadersRescheduleIntervalInMillis, dataloadersSchedulerPoolSize);
+    }
+    @Bean
+    public GraphQLServletContextBuilder getGraphQLServletContextBuilder(DataLoaderRegistryFactory dataLoaderRegistryFactory) {
+        return new RapidGraphQLContextBuilder(dataLoaderRegistryFactory);
     }
 
     private void addDirectives(SchemaParserBuilder schemaParserBuilder, List<GraphQLDirectiveWiring> directives) {

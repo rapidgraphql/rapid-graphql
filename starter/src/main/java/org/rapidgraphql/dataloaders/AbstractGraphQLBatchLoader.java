@@ -96,10 +96,10 @@ public abstract class AbstractGraphQLBatchLoader<K, T> implements GraphQLDataLoa
             if (dataLoader == null) {
                 dataLoader = createOrGetDataLoader();
                 if (dataLoaderRegistry instanceof ScheduledDataLoaderRegistry) {
-                    LOGGER.info("Registration of {} data loader in ScheduledDataLoaderRegistry", getDataLoaderName());
+                    LOGGER.debug("Registration of {} data loader in ScheduledDataLoaderRegistry", getDataLoaderName());
                     ((ScheduledDataLoaderRegistry)dataLoaderRegistry).register(getDataLoaderName(), dataLoader, getDispatchPredicate());
                 } else {
-                    LOGGER.info("Registration of {} data loader in DataLoaderRegistry", getDataLoaderName());
+                    LOGGER.debug("Registration of {} data loader in DataLoaderRegistry", getDataLoaderName());
                     dataLoaderRegistry.register(getDataLoaderName(), dataLoader);
                 }
             }
