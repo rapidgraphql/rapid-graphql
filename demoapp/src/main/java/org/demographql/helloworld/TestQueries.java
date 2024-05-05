@@ -7,6 +7,7 @@ import graphql.kickstart.tools.GraphQLQueryResolver;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,9 @@ public class TestQueries implements GraphQLQueryResolver {
     public Long longValue(Long val) {
         return val;
     }
+    public Float floatValue(Float val) { return val; }
+    public Double doubleValue(Double val) { return val; }
+    public BigDecimal bigDecimalValue(BigDecimal val) { return val; }
     public String stringValue(String val) {
         return val;
     }

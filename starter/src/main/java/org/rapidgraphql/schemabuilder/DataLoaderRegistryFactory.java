@@ -66,14 +66,14 @@ public class DataLoaderRegistryFactory implements AutoCloseable {
     public DataLoaderRegistry build() {
         DataLoaderRegistry dataLoaderRegistry;
         if (createScheduledLoader) {
-            LOGGER.info("building ScheduledDataLoaderRegistry");
+            LOGGER.debug("building ScheduledDataLoaderRegistry");
             dataLoaderRegistry = ScheduledDataLoaderRegistry.newScheduledRegistry()
                         .scheduledExecutorService(scheduledExecutionService)
                         .schedule(scheduleDuration)
                         .dispatchPredicate(dispatchPredicate)
                         .build();
         } else {
-            LOGGER.info("building DataLoaderRegistry");
+            LOGGER.debug("building DataLoaderRegistry");
             dataLoaderRegistry = new DataLoaderRegistry();
         }
         registrars.stream()
