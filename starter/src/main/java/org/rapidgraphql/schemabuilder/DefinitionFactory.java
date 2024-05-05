@@ -50,6 +50,9 @@ public class DefinitionFactory {
             ExtendedScalars.GraphQLLong,
             ExtendedScalars.Date,
             ExtendedScalars.DateTime,
+            ExtendedScalars.GraphQLChar,
+            ExtendedScalars.GraphQLBigDecimal,
+            ExtendedScalars.GraphQLBigInteger,
             TimestampScalar.INSTANCE,
             LocalDateTimeScalar.INSTANCE
     );
@@ -183,7 +186,7 @@ public class DefinitionFactory {
                     .name(name)
                     .fieldDefinitions(typeFields);
             if (implementsType != null) {
-                builder = builder.implementz(implementsType);
+                builder.implementz(implementsType);
             }
             return Stream.of(builder.build());
         } else {
@@ -192,7 +195,7 @@ public class DefinitionFactory {
                     .name(name)
                     .fieldDefinitions(typeFields);
             if (implementsType != null) {
-                builder = builder.implementz(implementsType);
+                builder.implementz(implementsType);
             }
             return Stream.of(builder.build());
         }

@@ -7,12 +7,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import graphql.kickstart.autoconfigure.tools.GraphQLJavaToolsAutoConfiguration;
 import graphql.kickstart.servlet.context.GraphQLServletContextBuilder;
-import graphql.kickstart.tools.GraphQLResolver;
-import graphql.kickstart.tools.PerFieldObjectMapperProvider;
-import graphql.kickstart.tools.SchemaParser;
-import graphql.kickstart.tools.SchemaParserBuilder;
-import graphql.kickstart.tools.SchemaParserOptions;
-import graphql.kickstart.tools.TypeDefinitionFactory;
+import graphql.kickstart.tools.*;
 import graphql.language.Definition;
 import graphql.language.ScalarTypeDefinition;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -22,6 +17,7 @@ import org.rapidgraphql.directives.RoleExtractor;
 import org.rapidgraphql.directives.SecuredDirectiveWiring;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -31,7 +27,6 @@ import org.springframework.context.annotation.Bean;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -39,15 +34,11 @@ import static org.slf4j.LoggerFactory.getLogger;
 @AutoConfiguration
 public class GraphQLSchemaResolver {
     private static final Logger LOGGER = getLogger(GraphQLSchemaResolver.class);
-    private final DefinitionFactory definitionFactory;
+    private final DefinitionFactory definitionFactory= new DefinitionFactory(new DefaultValueAnnotationProcessorImpl());
 
     private SchemaParser schemaParser = null;
 
-    public GraphQLSchemaResolver() {
-        definitionFactory = new DefinitionFactory(new DefaultValueAnnotationProcessorImpl());
-    }
-
-    class MyTypeDefinitionFactory implements TypeDefinitionFactory {
+    static class MyTypeDefinitionFactory implements TypeDefinitionFactory {
         private final List<? extends GraphQLResolver<?>> resolvers;
         private final List<Definition<?>> definitions;
 
@@ -67,10 +58,10 @@ public class GraphQLSchemaResolver {
         definitions.add(definitionFactory.createRoleDirectiveDefinition());
         definitions.addAll(definitionFactory.getScalars().stream()
                 .map(scalar -> ScalarTypeDefinition.newScalarTypeDefinition().name(scalar.getName()).build())
-                .collect(Collectors.toList()));
+                .toList());
         definitions.addAll(resolvers.stream()
                 .flatMap(definitionFactory::createTypeDefinition)
-                .collect(Collectors.toList()));
+                .toList());
         definitions.addAll(definitionFactory.processTypesQueue());
         return definitions;
     }
@@ -121,9 +112,18 @@ public class GraphQLSchemaResolver {
         return schemaParser;
     }
 
+    @Value("${rapidgraphql.dataloaders.reschedule-interval-in-millis:10}")
+    private Long dataloadersRescheduleIntervalInMillis;
+
+    @Value("${rapidgraphql.dataloaders.scheduler-pool-size:1}")
+    private int dataloadersSchedulerPoolSize;
     @Bean
-    public GraphQLServletContextBuilder getGraphQLServletContextBuilder(List<? extends GraphQLDataLoader> dataLoaders) {
-        return new RapidGraphQLContextBuilder(new DataLoaderRegistryFactory(dataLoaders));
+    public DataLoaderRegistryFactory dataLoaderRegistryFactory(List<? extends GraphQLDataLoader> dataLoaders) {
+        return new DataLoaderRegistryFactory(dataLoaders, dataloadersRescheduleIntervalInMillis, dataloadersSchedulerPoolSize);
+    }
+    @Bean
+    public GraphQLServletContextBuilder getGraphQLServletContextBuilder(DataLoaderRegistryFactory dataLoaderRegistryFactory) {
+        return new RapidGraphQLContextBuilder(dataLoaderRegistryFactory);
     }
 
     private void addDirectives(SchemaParserBuilder schemaParserBuilder, List<GraphQLDirectiveWiring> directives) {

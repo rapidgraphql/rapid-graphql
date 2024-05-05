@@ -1,8 +1,9 @@
 package org.rapidgraphql.dataloaders;
 
 import org.dataloader.BatchLoader;
+import org.dataloader.DataLoader;
 import org.dataloader.DataLoaderFactory;
-import org.dataloader.DataLoaderRegistry;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -15,7 +16,7 @@ public abstract class GraphQLBatchLoader<K, T> extends AbstractGraphQLBatchLoade
      * We recommend to implement synchronous variant of this: loadSync
      * @param keys the collection of keys to load
      *
-     * @return
+     * @return a promise of the values for those keys in the same order
      */
     @Override
     public CompletionStage<List<T>> load(List<K> keys) {
@@ -25,8 +26,8 @@ public abstract class GraphQLBatchLoader<K, T> extends AbstractGraphQLBatchLoade
     abstract public List<T> syncLoad(List<K> keys);
 
     @Override
-    public void registerIn(DataLoaderRegistry dataLoaderRegistry) {
-        dataLoaderRegistry.register(getDataLoaderName(),
-                DataLoaderFactory.newDataLoader(this, getDataLoaderOptions()));
+    @NotNull
+    protected DataLoader<K, T> createNewDataLoader() {
+        return DataLoaderFactory.newDataLoader(this, getDataLoaderOptions());
     }
 }
