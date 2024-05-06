@@ -6,6 +6,7 @@ import lombok.Getter;
 import org.dataloader.DataLoader;
 import org.dataloader.DataLoaderOptions;
 import org.dataloader.DataLoaderRegistry;
+import org.dataloader.ValueCacheOptions;
 import org.dataloader.registries.DispatchPredicate;
 import org.dataloader.registries.ScheduledDataLoaderRegistry;
 import org.jetbrains.annotations.NotNull;
@@ -20,6 +21,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 public abstract class AbstractGraphQLBatchLoader<K, T> implements GraphQLDataLoader, DataLoaderRegistrar<K, T> {
     private static final Logger LOGGER = getLogger(AbstractGraphQLBatchLoader.class);
+    private static DispatchPredicate DISPATCH_IF_EMPTY = (dataLoaderKey, dataLoader) -> dataLoader.dispatchDepth()==0;
 
     private final String dataLoaderName;
     @Getter
@@ -61,7 +63,14 @@ public abstract class AbstractGraphQLBatchLoader<K, T> implements GraphQLDataLoa
      * @param cache - initialized Guava cache to store loaded values
      */
     protected void useValueCache(Cache<K, T> cache) {
-        getDataLoaderOptions().setValueCache(new GuavaValueCache<>(cache));
+        getDataLoaderOptions()
+                .setValueCache(new GuavaValueCache<>(cache))
+                .setValueCacheOptions(ValueCacheOptions.newOptions().setCompleteValueAfterCacheSet(true));
+    }
+    protected void useFutureCache(Cache<K, CompletableFuture<T>> cache) {
+        getDataLoaderOptions()
+                .setCacheMap(new GuavaFutureCache<>(cache))
+                .setCachingEnabled(true);
     }
 
     /**
@@ -86,8 +95,13 @@ public abstract class AbstractGraphQLBatchLoader<K, T> implements GraphQLDataLoa
         if (scheduledDataLoader == null) {
             scheduledDataLoader = createNewDataLoader();
         }
-        dispatchPredicate = DispatchPredicate.dispatchIfLongerThan(durationSinceLastDispatch)
+        dispatchPredicate = DISPATCH_IF_EMPTY
+                .or(DispatchPredicate.dispatchIfLongerThan(durationSinceLastDispatch))
                 .or(DispatchPredicate.dispatchIfDepthGreaterThan(minDispatchSize-1));
+        // disable caching until explicit CacheMap is defined
+        if (dataLoaderOptions.cacheMap().isEmpty()) {
+            dataLoaderOptions.setCachingEnabled(false);
+        }
     }
     @Override
     public DataLoader<K, T> registerIn(DataLoaderRegistry dataLoaderRegistry) {
