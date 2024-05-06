@@ -5,6 +5,10 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import graphql.execution.preparsed.PreparsedDocumentEntry;
+import graphql.execution.preparsed.PreparsedDocumentProvider;
 import graphql.kickstart.autoconfigure.tools.GraphQLJavaToolsAutoConfiguration;
 import graphql.kickstart.servlet.context.GraphQLServletContextBuilder;
 import graphql.kickstart.tools.*;
@@ -27,6 +31,7 @@ import org.springframework.context.annotation.Bean;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -37,6 +42,15 @@ public class GraphQLSchemaResolver {
     private final DefinitionFactory definitionFactory= new DefinitionFactory(new DefaultValueAnnotationProcessorImpl());
 
     private SchemaParser schemaParser = null;
+
+    @Value("${rapidgraphql.dataloaders.reschedule-interval-in-millis:10}")
+    private Long dataloadersRescheduleIntervalInMillis;
+
+    @Value("${rapidgraphql.dataloaders.scheduler-pool-size:1}")
+    private int dataloadersSchedulerPoolSize;
+
+    @Value("${rapidgraphql.parsed-queries-cache-size:100}")
+    private int parsedQueriesCacheSize;
 
     static class MyTypeDefinitionFactory implements TypeDefinitionFactory {
         private final List<? extends GraphQLResolver<?>> resolvers;
@@ -81,6 +95,18 @@ public class GraphQLSchemaResolver {
                 .build();
     }
 
+    @ConditionalOnMissingBean(PreparsedDocumentProvider.class)
+    @Bean
+    public PreparsedDocumentProvider getPreparsedDocumentProvider() {
+        Cache<String, PreparsedDocumentEntry> cache = Caffeine.newBuilder().maximumSize(parsedQueriesCacheSize).build();
+
+        PreparsedDocumentProvider preparsedCache = (executionInput, parseAndValidateFunction) -> {
+            Function<String, PreparsedDocumentEntry> mapCompute = key -> parseAndValidateFunction.apply(executionInput);
+            return cache.get(executionInput.getQuery(), mapCompute);
+        };
+        return preparsedCache;
+    }
+
     @ConditionalOnMissingBean(PerFieldObjectMapperProvider.class)
     @Bean
     public PerFieldObjectMapperProvider getPerFieldObjectMapperProvider(@Qualifier("rapidGraphQLObjectMapper") ObjectMapper objectMapper) {
@@ -112,11 +138,6 @@ public class GraphQLSchemaResolver {
         return schemaParser;
     }
 
-    @Value("${rapidgraphql.dataloaders.reschedule-interval-in-millis:10}")
-    private Long dataloadersRescheduleIntervalInMillis;
-
-    @Value("${rapidgraphql.dataloaders.scheduler-pool-size:1}")
-    private int dataloadersSchedulerPoolSize;
     @Bean
     public DataLoaderRegistryFactory dataLoaderRegistryFactory(List<? extends GraphQLDataLoader> dataLoaders) {
         return new DataLoaderRegistryFactory(dataLoaders, dataloadersRescheduleIntervalInMillis, dataloadersSchedulerPoolSize);
