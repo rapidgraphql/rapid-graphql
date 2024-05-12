@@ -15,29 +15,33 @@ import org.slf4j.Logger;
 import org.springframework.util.ClassUtils;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
 public abstract class AbstractGraphQLBatchLoader<K, T> implements GraphQLDataLoader, DataLoaderRegistrar<K, T> {
     private static final Logger LOGGER = getLogger(AbstractGraphQLBatchLoader.class);
-    private static DispatchPredicate DISPATCH_IF_EMPTY = (dataLoaderKey, dataLoader) -> dataLoader.dispatchDepth()==0;
+    private static final DispatchPredicate DISPATCH_IF_EMPTY = (dataLoaderKey, dataLoader) -> dataLoader.dispatchDepth()==0;
 
     private final String dataLoaderName;
     @Getter
     private final DataLoaderOptions dataLoaderOptions = DataLoaderOptions.newOptions();
     @Getter
-    private DataLoader<K, T> scheduledDataLoader;
+    private DataLoader<K, T> sharedDataLoader;
 
     @Getter
     private DispatchPredicate dispatchPredicate = DispatchPredicate.DISPATCH_ALWAYS;
+    private boolean isScheduled = false;
 
     public AbstractGraphQLBatchLoader() {
         dataLoaderName = ClassUtils.getUserClass(getClass()).getName();
     }
 
     /**
-     * Retrieves entity by key using dataLoader instance registered in the data fetching environment
+     * Retrieves promise to entity by key using dataLoader instance registered in the data fetching environment
+     * Creates and registers dataloader lazily if it isn't present in the environment
+     * Entity will be fetched only when the dispatch will be scheduled
      *
      * @param key - key of entity to retrieve
      * @param env - DataFetchingEnvironment
@@ -50,6 +54,24 @@ public abstract class AbstractGraphQLBatchLoader<K, T> implements GraphQLDataLoa
             dataLoader = registerIn(env.getDataLoaderRegistry());
         }
         return dataLoader.load(key);
+    }
+
+    /**
+     * Retrieves promise to list of entities by list of keys using dataLoader instance registered in the data fetching environment
+     * Creates and registers dataloader lazily if it isn't present in the environment
+     * Entity will be fetched only when the dispatch will be scheduled
+     *
+     * @param keys - list of keys to retrieve
+     * @param env - DataFetchingEnvironment
+     * @return CompletableFuture to the retrieved entities.
+     * Requested entities are resolved in batches when the dispatch on dataloader is called.
+     */
+    public CompletableFuture<List<T>> getMany(List<K> keys, DataFetchingEnvironment env) {
+        DataLoader<K, T> dataLoader = env.getDataLoader(dataLoaderName);
+        if (dataLoader == null) {
+            dataLoader = registerIn(env.getDataLoaderRegistry());
+        }
+        return dataLoader.loadMany(keys);
     }
 
     /**
@@ -67,7 +89,21 @@ public abstract class AbstractGraphQLBatchLoader<K, T> implements GraphQLDataLoa
                 .setValueCache(new GuavaValueCache<>(cache))
                 .setValueCacheOptions(ValueCacheOptions.newOptions().setCompleteValueAfterCacheSet(true));
     }
+    /**
+     * Setups Guava cache as FutureCache for DataLoader
+     * FutureCache is the most efficient way to cache entities. It will store completed futures
+     * <code>
+     *     useFutureCache(CacheBuilder.newBuilder()
+     *                 .maximumSize(1000) // Adjust size as per your requirements
+     *                 .expireAfterWrite(30, TimeUnit.MINUTES) // Adjust expiry time as per your requirements
+     *                 .build());
+     * </code>
+     * @param cache - initialized Guava cache to store CompletableFutures for loaded values
+     */
     protected void useFutureCache(Cache<K, CompletableFuture<T>> cache) {
+        if (sharedDataLoader == null) {
+            sharedDataLoader = createNewDataLoader();
+        }
         getDataLoaderOptions()
                 .setCacheMap(new GuavaFutureCache<>(cache))
                 .setCachingEnabled(true);
@@ -92,8 +128,9 @@ public abstract class AbstractGraphQLBatchLoader<K, T> implements GraphQLDataLoa
      * @param minDispatchSize - minimal accumulated number of items to dispatch
      */
     protected void useScheduledDispatch(Duration durationSinceLastDispatch, int minDispatchSize) {
-        if (scheduledDataLoader == null) {
-            scheduledDataLoader = createNewDataLoader();
+        isScheduled = true;
+        if (sharedDataLoader == null) {
+            sharedDataLoader = createNewDataLoader();
         }
         dispatchPredicate = DISPATCH_IF_EMPTY
                 .or(DispatchPredicate.dispatchIfLongerThan(durationSinceLastDispatch))
@@ -103,6 +140,7 @@ public abstract class AbstractGraphQLBatchLoader<K, T> implements GraphQLDataLoa
             dataLoaderOptions.setCachingEnabled(false);
         }
     }
+
     @Override
     public DataLoader<K, T> registerIn(DataLoaderRegistry dataLoaderRegistry) {
         synchronized (dataLoaderRegistry) {
@@ -123,8 +161,8 @@ public abstract class AbstractGraphQLBatchLoader<K, T> implements GraphQLDataLoa
 
     @NotNull
     protected DataLoader<K, T> createOrGetDataLoader() {
-        if (scheduledDataLoader != null) {
-            return scheduledDataLoader;
+        if (sharedDataLoader != null) {
+            return sharedDataLoader;
         }
         return createNewDataLoader();
     }
@@ -138,7 +176,7 @@ public abstract class AbstractGraphQLBatchLoader<K, T> implements GraphQLDataLoa
 
     @Override
     public boolean isScheduled() {
-        return scheduledDataLoader != null;
+        return isScheduled;
     }
 
     @Override

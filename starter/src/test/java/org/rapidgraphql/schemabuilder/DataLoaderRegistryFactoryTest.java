@@ -190,7 +190,7 @@ class DataLoaderRegistryFactoryTest {
         int DURATION_SINCE_LAST_DISPATCH_IN_MILLIS = 2000;
         ScheduledLoader loader = new ScheduledLoader(DURATION_SINCE_LAST_DISPATCH_IN_MILLIS, 100);
         DataLoaderRegistryFactory dataLoaderRegistryFactory = new DataLoaderRegistryFactory(List.of(loader), 100, 1);
-        DataLoader<Integer, Integer> scheduledDataLoader = loader.getScheduledDataLoader();
+        DataLoader<Integer, Integer> scheduledDataLoader = loader.getSharedDataLoader();
         assertThat(scheduledDataLoader).isNotNull();
         List<CompletableFuture<Integer>> promises = new ArrayList<>();
         for(int i = 0; i < DISPATCH_SIZE; i++) {

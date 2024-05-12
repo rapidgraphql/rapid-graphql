@@ -5,7 +5,19 @@ import org.dataloader.DataLoaderRegistry;
 import org.dataloader.registries.ScheduledDataLoaderRegistry;
 
 public interface DataLoaderRegistrar<K, T> {
+    /**
+     * Register correspondent dataloader in the dataLoaderRegistry
+     * DataloaderRegistry is usually created per requests.
+     * Dataloaders can be shared between requests or created for each request
+     * @param dataLoaderRegistry
+     * @return
+     */
     DataLoader<K, T> registerIn(DataLoaderRegistry dataLoaderRegistry);
+
+    /**
+     * Returns nume of dataloader by which it will be registered in the dataloader registry
+     * @return
+     */
     String getDataLoaderName();
 
     /**
