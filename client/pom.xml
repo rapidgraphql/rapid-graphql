@@ -5,12 +5,12 @@
     <parent>
         <artifactId>rapid-graphql</artifactId>
         <groupId>io.github.rapidgraphql</groupId>
-        <version>2.2.2</version>
+        <version>2.2.3</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>rapid-graphql-client</artifactId>
-    <version>2.2.2</version>
+    <version>2.2.3</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -26,12 +26,28 @@
         <!-- OR maybe you like Jackson better? -->
         <dependency>
             <groupId>com.konghq</groupId>
-            <artifactId>unirest-objectmapper-jackson</artifactId>
+            <artifactId>unirest-modules-jackson</artifactId>
         </dependency>
+        <!--	Parameter names	-->
+        <dependency>
+            <groupId>com.fasterxml.jackson.module</groupId>
+            <artifactId>jackson-module-parameter-names</artifactId>
+        </dependency>
+        <!--	Java 8 Date/time	-->
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
+        <!--	Java 8 Datatypes	-->
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jdk8</artifactId>
+        </dependency>        <!-- Annotations from the Checker Framework: nullness, interning, locking, ... -->
+
         <dependency>
             <groupId>io.github.rapidgraphql</groupId>
             <artifactId>rapid-graphql-annotations</artifactId>
-            <version>2.2.2</version>
+            <version>2.2.3</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
