@@ -3,7 +3,6 @@ package org.rapidgraphql.dataloaders;
 import org.dataloader.DataLoader;
 import org.dataloader.DataLoaderFactory;
 import org.dataloader.MappedBatchLoader;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 import java.util.Set;
@@ -33,7 +32,6 @@ public abstract class GraphQLMappedBatchLoader<K, T> extends AbstractGraphQLBatc
     }
 
     @Override
-    @NotNull
     protected DataLoader<K, T> createNewDataLoader() {
         return DataLoaderFactory.newMappedDataLoader(this, getDataLoaderOptions());
     }

@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.HandshakeRequest;
+import org.rapidgraphql.dataloaders.DataLoaderRegistryFactory;
 
 import java.util.HashMap;
 import java.util.Map;

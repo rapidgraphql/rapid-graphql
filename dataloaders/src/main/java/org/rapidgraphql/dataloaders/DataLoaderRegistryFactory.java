@@ -1,12 +1,9 @@
-package org.rapidgraphql.schemabuilder;
+package org.rapidgraphql.dataloaders;
 
 import org.dataloader.*;
 import org.dataloader.registries.DispatchPredicate;
 import org.dataloader.registries.ScheduledDataLoaderRegistry;
 import org.rapidgraphql.annotations.DataLoaderMethod;
-import org.rapidgraphql.dataloaders.DataLoaderRegistrar;
-import org.rapidgraphql.directives.GraphQLDataLoader;
-import org.rapidgraphql.utils.MethodsFilter;
 import org.slf4j.Logger;
 
 import java.lang.reflect.Method;
@@ -14,6 +11,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -40,8 +38,7 @@ public class DataLoaderRegistryFactory implements AutoCloseable {
             if (graphQLDataLoader instanceof DataLoaderRegistrar) {
                 registrars.add((DataLoaderRegistrar)graphQLDataLoader);
             } else {
-                Method[] dataLoaderMethods = MethodsFilter.getDataLoaderMethods(graphQLDataLoader.getClass());
-                Arrays.stream(dataLoaderMethods)
+                getDataLoaderMethods(graphQLDataLoader.getClass())
                         .map(method -> createRegistrar(method, graphQLDataLoader))
                         .filter(Objects::nonNull)
                         .forEach(registrars::add);
@@ -123,6 +120,15 @@ public class DataLoaderRegistryFactory implements AutoCloseable {
                 }
             }
         }
+    }
+
+    private static Stream<Method> getDataLoaderMethods(Class<? extends GraphQLDataLoader> clazz) {
+        return TypeUtils.streamDeclaredMethods(clazz,
+                DataLoaderRegistryFactory::dataLoaderMethodFilter);
+    }
+
+    private static boolean dataLoaderMethodFilter(Method method) {
+        return method.isAnnotationPresent(DataLoaderMethod.class);
     }
 
     public static class BatchLoaderMethod implements BatchLoader<Object, Object>, DataLoaderRegistrar<Object, Object> {

@@ -1,6 +1,7 @@
 package org.rapidgraphql.dataloaders;
 
 import com.google.common.cache.Cache;
+import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import lombok.Getter;
 import org.dataloader.DataLoader;
@@ -9,15 +10,15 @@ import org.dataloader.DataLoaderRegistry;
 import org.dataloader.ValueCacheOptions;
 import org.dataloader.registries.DispatchPredicate;
 import org.dataloader.registries.ScheduledDataLoaderRegistry;
-import org.jetbrains.annotations.NotNull;
-import org.rapidgraphql.directives.GraphQLDataLoader;
 import org.slf4j.Logger;
-import org.springframework.util.ClassUtils;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
+import static org.rapidgraphql.dataloaders.TypeUtils.getUserClass;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public abstract class AbstractGraphQLBatchLoader<K, T> implements GraphQLDataLoader, DataLoaderRegistrar<K, T> {
@@ -35,7 +36,11 @@ public abstract class AbstractGraphQLBatchLoader<K, T> implements GraphQLDataLoa
     private boolean isScheduled = false;
 
     public AbstractGraphQLBatchLoader() {
-        dataLoaderName = ClassUtils.getUserClass(getClass()).getName();
+        this.dataLoaderName = getUserClass(getClass()).getName();
+    }
+
+    public AbstractGraphQLBatchLoader(String dataLoaderName) {
+        this.dataLoaderName = dataLoaderName;
     }
 
     /**
@@ -141,6 +146,27 @@ public abstract class AbstractGraphQLBatchLoader<K, T> implements GraphQLDataLoa
         }
     }
 
+    /**
+     * Creates dataFetcher that uses underlying dataloader to fetch data.
+     * Key for data loader is extracted using keyExtractor function
+     * @param keyExtractor
+     * @return dataFetcher that can be used to fetch data
+     */
+    public DataFetcher<CompletableFuture<T>> dataFetcher(Function<DataFetchingEnvironment, K> keyExtractor) {
+        return environment -> {
+            K key = keyExtractor.apply(environment);
+            return get(key, environment);
+        };
+    }
+
+    public static <KEY> Function<DataFetchingEnvironment, KEY> keyExtractorFromMapSource(String keyName) {
+        return environment -> (KEY)((Map)environment.getSource()).get(keyName);
+    }
+
+    public static <KEY> Function<DataFetchingEnvironment, ?> keyExtractorFromArgument(String argName) {
+        return environment -> (KEY)environment.getArgument(argName);
+    }
+
     @Override
     public DataLoader<K, T> registerIn(DataLoaderRegistry dataLoaderRegistry) {
         synchronized (dataLoaderRegistry) {
@@ -159,14 +185,12 @@ public abstract class AbstractGraphQLBatchLoader<K, T> implements GraphQLDataLoa
         }
     }
 
-    @NotNull
     protected DataLoader<K, T> createOrGetDataLoader() {
         if (sharedDataLoader != null) {
             return sharedDataLoader;
         }
         return createNewDataLoader();
     }
-    @NotNull
     abstract protected DataLoader<K, T> createNewDataLoader();
 
     @Override
@@ -183,4 +207,5 @@ public abstract class AbstractGraphQLBatchLoader<K, T> implements GraphQLDataLoa
     public String getDataLoaderName() {
         return dataLoaderName;
     }
+
 }

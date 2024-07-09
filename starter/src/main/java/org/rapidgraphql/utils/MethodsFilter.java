@@ -3,7 +3,6 @@ package org.rapidgraphql.utils;
 import org.jetbrains.annotations.NotNull;
 import org.rapidgraphql.annotations.DataLoaderMethod;
 import org.rapidgraphql.annotations.GraphQLIgnore;
-import org.rapidgraphql.directives.GraphQLDataLoader;
 import org.rapidgraphql.schemabuilder.DiscoveredClass;
 import org.slf4j.Logger;
 import org.springframework.util.ReflectionUtils;
@@ -46,16 +45,6 @@ public class MethodsFilter {
     public static Method[] getInputTypeMethods(DiscoveredClass discoveredClass) {
         return ReflectionUtils.getUniqueDeclaredMethods(discoveredClass.getClazz(),
                 MethodsFilter::inputTypeMethodFilter);
-    }
-
-    @NotNull
-    public static Method[] getDataLoaderMethods(Class<? extends GraphQLDataLoader> clazz) {
-        return ReflectionUtils.getUniqueDeclaredMethods(clazz,
-                MethodsFilter::dataLoaderMethodFilter);
-    }
-
-    private static boolean dataLoaderMethodFilter(Method method) {
-        return method.isAnnotationPresent(DataLoaderMethod.class);
     }
 
     public static boolean resolverMethodFilter(Class<?> sourceType, Method method, boolean isSubscription) {

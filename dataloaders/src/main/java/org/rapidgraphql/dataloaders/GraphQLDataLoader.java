@@ -1,4 +1,4 @@
-package org.rapidgraphql.directives;
+package org.rapidgraphql.dataloaders;
 
 public interface GraphQLDataLoader {
 }

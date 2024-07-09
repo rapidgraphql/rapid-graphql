@@ -1,4 +1,4 @@
-package org.rapidgraphql.schemabuilder;
+package org.rapidgraphql.dataloaders;
 
 import com.google.common.cache.CacheBuilder;
 import graphql.schema.DataFetchingEnvironment;
@@ -7,7 +7,6 @@ import org.dataloader.DataLoader;
 import org.dataloader.DataLoaderRegistry;
 import org.dataloader.registries.ScheduledDataLoaderRegistry;
 import org.junit.jupiter.api.Test;
-import org.rapidgraphql.dataloaders.GraphQLMappedBatchLoader;
 
 import java.time.Duration;
 import java.util.ArrayList;

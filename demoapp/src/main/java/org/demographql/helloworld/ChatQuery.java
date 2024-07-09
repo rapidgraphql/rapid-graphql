@@ -4,7 +4,7 @@ import graphql.kickstart.tools.GraphQLQueryResolver;
 import graphql.schema.DataFetchingEnvironment;
 import org.dataloader.DataLoader;
 import org.rapidgraphql.annotations.DataLoaderMethod;
-import org.rapidgraphql.directives.GraphQLDataLoader;
+import org.rapidgraphql.dataloaders.GraphQLDataLoader;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

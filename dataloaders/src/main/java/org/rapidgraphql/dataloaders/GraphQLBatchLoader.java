@@ -3,7 +3,6 @@ package org.rapidgraphql.dataloaders;
 import org.dataloader.BatchLoader;
 import org.dataloader.DataLoader;
 import org.dataloader.DataLoaderFactory;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -26,7 +25,6 @@ public abstract class GraphQLBatchLoader<K, T> extends AbstractGraphQLBatchLoade
     abstract public List<T> syncLoad(List<K> keys);
 
     @Override
-    @NotNull
     protected DataLoader<K, T> createNewDataLoader() {
         return DataLoaderFactory.newDataLoader(this, getDataLoaderOptions());
     }
