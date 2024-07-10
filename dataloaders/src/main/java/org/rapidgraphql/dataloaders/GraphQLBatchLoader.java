@@ -10,6 +10,10 @@ import java.util.concurrent.CompletionStage;
 
 public abstract class GraphQLBatchLoader<K, T> extends AbstractGraphQLBatchLoader<K, T> implements BatchLoader<K, T> {
 
+    public GraphQLBatchLoader() {}
+    public GraphQLBatchLoader(String dataLoaderName) {
+        super(dataLoaderName);
+    }
     /**
      * This method is called by DataLoader framework to load batch of entities
      * We recommend to implement synchronous variant of this: loadSync

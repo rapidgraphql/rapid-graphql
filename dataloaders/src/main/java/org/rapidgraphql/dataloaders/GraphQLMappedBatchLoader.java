@@ -11,6 +11,11 @@ import java.util.concurrent.CompletionStage;
 
 public abstract class GraphQLMappedBatchLoader<K, T> extends AbstractGraphQLBatchLoader<K, T>  implements MappedBatchLoader<K, T> {
 
+    public GraphQLMappedBatchLoader() {}
+    public GraphQLMappedBatchLoader(String dataLoaderName) {
+        super(dataLoaderName);
+    }
+
     /**
      * Synchronous batch load
      * @param keys - Set of keys to load
