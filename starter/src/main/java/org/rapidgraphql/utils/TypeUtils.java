@@ -15,10 +15,7 @@ import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static java.lang.String.format;
 import static org.rapidgraphql.utils.FieldAnnotations.containsNotNullableAnnotation;
@@ -60,6 +57,11 @@ public class TypeUtils {
     public static boolean isListType(AnnotatedParameterizedType type) {
         Class<?> clazz = baseType(type);
         return clazz.getTypeParameters().length==1 && List.class.isAssignableFrom(clazz);
+    }
+
+    public static boolean isMapType(AnnotatedParameterizedType type) {
+        Class<?> clazz = baseType(type);
+        return Map.class.isAssignableFrom(clazz);
     }
 
     public static boolean isListType(Class<?> type) {

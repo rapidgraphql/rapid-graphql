@@ -45,4 +45,11 @@ class FieldAnnotationsTest {
         assertThat(fieldAnnotations.isFieldIgnored("id")).isEqualTo(false);
         assertThat(fieldAnnotationsInput.isFieldIgnored("id")).isEqualTo(true);
     }
+    interface Interface {
+        int fun();
+    }
+    @Test
+    public void hasNoExceptionWhileProcessingInterface() {
+        new FieldAnnotations(Interface.class, TypeKind.OUTPUT_TYPE);
+    }
 }

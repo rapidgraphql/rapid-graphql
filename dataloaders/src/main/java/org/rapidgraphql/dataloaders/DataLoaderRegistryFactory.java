@@ -123,7 +123,7 @@ public class DataLoaderRegistryFactory implements AutoCloseable {
     }
 
     private static Stream<Method> getDataLoaderMethods(Class<? extends GraphQLDataLoader> clazz) {
-        return TypeUtils.streamDeclaredMethods(clazz,
+        return ClassUtils.streamDeclaredMethods(clazz,
                 DataLoaderRegistryFactory::dataLoaderMethodFilter);
     }
 

@@ -11,8 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class TypeUtilsTest {
     @SuppressWarnings("unused") // used by reflection
@@ -20,8 +19,8 @@ class TypeUtilsTest {
 
     @Test
     public void validatesTypeIsList() {
-        Assertions.assertTrue(TypeUtils.isListType(List.class));
-        Assertions.assertTrue(TypeUtils.isListType(ArrayList.class));
+        assertTrue(TypeUtils.isListType(List.class));
+        assertTrue(TypeUtils.isListType(ArrayList.class));
     }
 
     @Test
@@ -35,11 +34,11 @@ class TypeUtilsTest {
         assertTrue(annotatedType.isPresent());
         Optional<AnnotatedParameterizedType> annotatedParameterizedType = TypeUtils.castToParameterizedType(annotatedType.get());
         assertTrue(annotatedParameterizedType.isPresent());
-        Assertions.assertTrue(TypeUtils.isListType(annotatedParameterizedType.get()));
+        assertTrue(TypeUtils.isListType(annotatedParameterizedType.get()));
         AnnotatedType annotatedType1 = TypeUtils.actualTypeArgument(annotatedParameterizedType.get(), 0);
         Optional<AnnotatedParameterizedType> annotatedParameterizedType1 = TypeUtils.castToParameterizedType(annotatedType1);
         assertTrue(annotatedParameterizedType1.isPresent());
-        Assertions.assertTrue(TypeUtils.isListType(annotatedParameterizedType1.get()));
+        assertTrue(TypeUtils.isListType(annotatedParameterizedType1.get()));
         AnnotatedType annotatedType2 = TypeUtils.actualTypeArgument(annotatedParameterizedType1.get(), 0);
         assertThat(annotatedType2.getType()).isEqualTo(String.class);
     }
@@ -47,10 +46,10 @@ class TypeUtilsTest {
     public void listElementTypeExtractionTest_and_nonNullValidation() {
         Optional<AnnotatedType> annotatedType = TypeUtils.extractClassFieldAnnotatedType(TypeUtilsTest.class, "listListString");
         assertTrue(annotatedType.isPresent());
-        Assertions.assertTrue(TypeUtils.isNotNullable(annotatedType.get()));
+        assertTrue(TypeUtils.isNotNullable(annotatedType.get()));
         Optional<AnnotatedType> annotatedType1 = TypeUtils.extractListElementType(annotatedType.get());
         assertTrue(annotatedType1.isPresent());
-        Assertions.assertTrue(TypeUtils.isNotNullable(annotatedType1.get()));
+        assertTrue(TypeUtils.isNotNullable(annotatedType1.get()));
         Optional<AnnotatedType> annotatedType2 = TypeUtils.extractListElementType(annotatedType1.get());
         assertTrue(annotatedType2.isPresent());
         assertThat(annotatedType2.get().getType()).isEqualTo(String.class);

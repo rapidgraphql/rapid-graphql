@@ -28,11 +28,16 @@ public class FieldAnnotations {
     }
 
     public FieldAnnotations(Class<?> clazz, TypeKind typeKind) {
-        typeLevelIgnoredFields = getTypeLevelIgnoredFields(clazz, typeKind);
-        fieldsWithAnnotations = getAllFields(clazz)
-                .map(field -> Map.entry(field.getName(), field.getAnnotations()))
-                .filter(e -> e.getValue().length > 0)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        if (clazz.isInterface()) {
+            typeLevelIgnoredFields = Set.of();
+            fieldsWithAnnotations = Map.of();
+        } else {
+            typeLevelIgnoredFields = getTypeLevelIgnoredFields(clazz, typeKind);
+            fieldsWithAnnotations = getAllFields(clazz)
+                    .map(field -> Map.entry(field.getName(), field.getAnnotations()))
+                    .filter(e -> e.getValue().length > 0)
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        }
     }
 
     private Stream<Field> getAllFields(Class<?> clazz) {

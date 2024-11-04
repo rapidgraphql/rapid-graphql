@@ -4,7 +4,6 @@ import graphql.kickstart.tools.GraphQLResolver;
 import org.rapidgraphql.exceptions.GraphQLSchemaGenerationException;
 import org.rapidgraphql.utils.TypeKind;
 import org.slf4j.Logger;
-import org.springframework.util.ClassUtils;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -21,8 +20,7 @@ public class ResolverTypeExtractor {
     private static final Logger LOGGER = getLogger(ResolverTypeExtractor.class);
 
     public static Optional<DiscoveredClass> extractResolverType(GraphQLResolver<?> graphQLResolver) {
-        return extractResolverTypeFromClass(
-                ClassUtils.getUserClass(graphQLResolver.getClass()));
+        return extractResolverTypeFromClass(graphQLResolver.getClass());
     }
 
     private static Optional<DiscoveredClass> extractResolverTypeFromClass(Class<?> resolverClass) {
@@ -44,6 +42,10 @@ public class ResolverTypeExtractor {
                 throw new GraphQLSchemaGenerationException("Failed to extract resolver class of " + resolverClass.getTypeName());
             }
         }
+        return extractResolverTypeFromGenericType(resolverClass);
+    }
+
+    private static Optional<DiscoveredClass> extractResolverTypeFromGenericType(Class<?> resolverClass) {
         Type genericSuperclass = resolverClass.getGenericSuperclass();
         if (genericSuperclass instanceof Class<?>) {
             return extractResolverTypeFromClass((Class<?>) genericSuperclass);
@@ -81,16 +83,7 @@ public class ResolverTypeExtractor {
                 throw new GraphQLSchemaGenerationException("Failed to extract resolver class of " + resolverSuperclass.getTypeName());
             }
         }
-        Type genericSuperclass = rawType.getGenericSuperclass();
-        if (genericSuperclass instanceof Class<?>) {
-            return extractResolverTypeFromClass((Class<?>) genericSuperclass);
-        }
-        if (genericSuperclass instanceof ParameterizedType) {
-            ParameterizedType superclass = (ParameterizedType)genericSuperclass;
-            LOGGER.info("superclass {}", superclass.getTypeName());
-
-        }
-        return Optional.empty();
+        return extractResolverTypeFromGenericType(rawType);
     }
 
     private static Map<String, Class<?>> buildActualParametersMap(ParameterizedType type) {

@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import static org.rapidgraphql.dataloaders.TypeUtils.getUserClass;
+import static org.rapidgraphql.dataloaders.ClassUtils.getUserClass;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public abstract class AbstractGraphQLBatchLoader<K, T> implements GraphQLDataLoader, DataLoaderRegistrar<K, T> {

@@ -54,7 +54,7 @@ In ``pom.xml`` you should add following dependencies:
         <dependency>
             <groupId>io.github.rapidgraphql</groupId>
             <artifactId>rapid-graphql-starter</artifactId>
-            <version>2.3.1</version>
+            <version>2.3.2</version>
         </dependency>
         <dependency> <!-- Recommended -->
             <groupId>org.projectlombok</groupId>
@@ -247,7 +247,7 @@ Following mvn dependency should be added:
         <dependency>
             <groupId>io.github.rapidgraphql</groupId>
             <artifactId>rapid-graphql-client</artifactId>
-            <version>2.3.1</version>
+            <version>2.3.2</version>
         </dependency>
 ```
 In addition to rapid-graphql work properly the `-parameters` flag of java compiler should be enabled.
@@ -276,4 +276,35 @@ To improve performance caching of parsed queries was introduced in version 2.2.0
 The cache size can be configured using following property:
 ```properties
 rapidgraphql.parsed-queries-cache-size=100
+```
+
+## Exposing REST API as graphql
+rapidgraphql allows easily to expose existing REST APIs as GraphQL 
+The simplest way to do it is to use feign rest client as follows:
+```java
+public interface RestClient extends GraphQLQueryResolver {
+    @RequestLine("GET /api/v1/products/")
+    List<Product> products();
+    @RequestLine("GET /api/v1/customers/")
+    List<Customers> products();
+}
+// Create Feign client bean as follows:
+@Bean
+public GraphQLQueryResolver restClient() {
+    JacksonDecoder jacksonDecoder = new JacksonDecoder();
+    return Feign.builder()
+            .client(new OkHttpClient())
+            .decode404()
+            .encoder(new JacksonEncoder())
+            .decoder(jacksonDecoder)
+            .logger(new Slf4jLogger(RestClient.class))
+            .logLevel(Logger.Level.BASIC)
+            //.requestInterceptor(authorizationInterceptor)
+            .options(new Request.Options(
+                    connectTimeoutMs, TimeUnit.MILLISECONDS, readTimeoutMs, TimeUnit.MILLISECONDS, true
+            ))
+            .target(RestClient.class, restServerUrl);
+
+}
+
 ```

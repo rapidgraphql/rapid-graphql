@@ -11,20 +11,20 @@ import org.jetbrains.annotations.NotNull;
 import org.rapidgraphql.annotations.GraphQLInterface;
 import org.rapidgraphql.directives.SecuredDirectiveWiring;
 import org.rapidgraphql.exceptions.GraphQLSchemaGenerationException;
-import org.rapidgraphql.scalars.LocalDateTimeScalar;
-import org.rapidgraphql.scalars.TimestampScalar;
+import org.rapidgraphql.scalars.*;
 import org.rapidgraphql.utils.FieldAnnotations;
 import org.rapidgraphql.utils.InterfaceUtils;
 import org.rapidgraphql.utils.TypeKind;
 import org.slf4j.Logger;
-import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.sql.Time;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -39,6 +39,7 @@ import static org.rapidgraphql.schemabuilder.ResolverTypeExtractor.extractResolv
 import static org.rapidgraphql.utils.MethodsFilter.*;
 import static org.rapidgraphql.utils.TypeUtils.*;
 import static org.slf4j.LoggerFactory.getLogger;
+import org.rapidgraphql.dataloaders.ClassUtils;
 
 public class DefinitionFactory {
 
@@ -54,7 +55,12 @@ public class DefinitionFactory {
             ExtendedScalars.GraphQLBigDecimal,
             ExtendedScalars.GraphQLBigInteger,
             TimestampScalar.INSTANCE,
-            LocalDateTimeScalar.INSTANCE
+            LocalDateTimeScalar.INSTANCE,
+            ExtendedScalars.Json,
+            LocalDateScalar.INSTANCE,
+            LocalTimeScalar.INSTANCE,
+            DateScalar.INSTANCE,
+            TimeScalar.INSTANCE
     );
     private static final Map<java.lang.reflect.Type, Type<?>> scalarTypes = Map.ofEntries(
             entry(Integer.TYPE, nonNullType("Int")),
@@ -79,7 +85,11 @@ public class DefinitionFactory {
             entry(LocalDate.class, nullableType(ExtendedScalars.Date.getName())),
             entry(OffsetDateTime.class, nullableType(ExtendedScalars.DateTime.getName())),
             entry(java.sql.Timestamp.class, nullableType(TimestampScalar.INSTANCE.getName())),
-            entry(LocalDateTime.class, nullableType(LocalDateTimeScalar.INSTANCE.getName()))
+            entry(LocalDateTime.class, nullableType(LocalDateTimeScalar.INSTANCE.getName())),
+            entry(Map.class, nullableType(ExtendedScalars.Json.getName())),
+            entry(Date.class, nullableType(DateScalar.INSTANCE.getName())),
+            entry(Time.class, nullableType(TimeScalar.INSTANCE.getName())),
+            entry(LocalTime.class, nullableType(LocalTimeScalar.INSTANCE.getName()))
     );
     private final Map<String, DiscoveredClass> discoveredTypes = new HashMap<>();
     private final Queue<DiscoveredClass> discoveredTypesQueue = new ArrayDeque<>();
@@ -403,12 +413,19 @@ public class DefinitionFactory {
     private Type<?> convertToGraphQLType(AnnotatedType annotatedType, org.rapidgraphql.utils.TypeKind typeKind) {
         Optional<AnnotatedParameterizedType> parameterizedType = castToParameterizedType(annotatedType);
         Type<?> graphqlType;
-        if (typeKind == org.rapidgraphql.utils.TypeKind.OUTPUT_TYPE && parameterizedType.isPresent() && isPublisherType(parameterizedType.get())) {
-            AnnotatedType typeOfParameter = actualTypeArgument(parameterizedType.get(), 0);
-            graphqlType = convertToGraphQLType(typeOfParameter, typeKind);
-        } else if (parameterizedType.isPresent() && isListType(parameterizedType.get())) {
-            AnnotatedType typeOfParameter = actualTypeArgument(parameterizedType.get(), 0);
-            graphqlType = new ListType(convertToGraphQLType(typeOfParameter, typeKind));
+        if (parameterizedType.isPresent()) {
+            AnnotatedParameterizedType type = parameterizedType.get();
+            if (typeKind == TypeKind.OUTPUT_TYPE && isPublisherType(type)) {
+                AnnotatedType typeOfParameter = actualTypeArgument(type, 0);
+                graphqlType = convertToGraphQLType(typeOfParameter, typeKind);
+            } else if (isListType(type)) {
+                AnnotatedType typeOfParameter = actualTypeArgument(type, 0);
+                graphqlType = new ListType(convertToGraphQLType(typeOfParameter, typeKind));
+            } else if (isMapType(type)) {
+                graphqlType = scalarTypes.get(Map.class);
+            } else {
+                throw new RuntimeException("Unsupported parameterized type " + annotatedType.getType().getTypeName());
+            }
         } else {
             java.lang.reflect.Type type = annotatedType.getType();
             graphqlType = scalarTypes.get(type);
