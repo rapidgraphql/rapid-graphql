@@ -54,7 +54,7 @@ In ``pom.xml`` you should add following dependencies:
         <dependency>
             <groupId>io.github.rapidgraphql</groupId>
             <artifactId>rapid-graphql-starter</artifactId>
-            <version>2.3.2</version>
+            <version>2.4.0</version>
         </dependency>
         <dependency> <!-- Recommended -->
             <groupId>org.projectlombok</groupId>
@@ -67,6 +67,24 @@ In ``pom.xml`` you should add following dependencies:
 That's it, hello world graphql application is ready.
 You can go to http://localhost:8080/graphiql
 
+## Built-in UI frontends
+rapid graphql comes integrated with following UI frontends:
+1. GraphiQL
+```properties
+graphql.graphiql.enabled=true
+```
+2. Altair
+```properties
+graphql.altair.enabled=true
+```
+3. GraphQL Playground
+```properties
+graphql.playground.enabled=true
+```
+3. Voyager (shows relations between entities)
+```properties
+graphql.voyager.enabled=true
+```
 ## Supported Concepts
 ### Queries & Types
 Schema is automatically generated from multiple Query Resolvers -> Query type, and Types and Type Resolvers, e.g:
@@ -247,7 +265,7 @@ Following mvn dependency should be added:
         <dependency>
             <groupId>io.github.rapidgraphql</groupId>
             <artifactId>rapid-graphql-client</artifactId>
-            <version>2.3.2</version>
+            <version>2.4.0</version>
         </dependency>
 ```
 In addition to rapid-graphql work properly the `-parameters` flag of java compiler should be enabled.
